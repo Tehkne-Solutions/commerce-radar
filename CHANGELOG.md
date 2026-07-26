@@ -1,5 +1,42 @@
 # Changelog — Commerce Radar
 
+## 0.4.0 — Importação de Dados
+
+### Adicionado
+
+- Importação de arquivos CSV, TXT e TSV.
+- Detecção automática de ponto e vírgula, vírgula, tabulação e barra vertical.
+- Leitura de arquivos UTF-8 com fallback para Windows-1252.
+- Normalização de valores monetários no padrão pt-BR.
+- Reconhecimento automático de cabeçalhos em português e inglês.
+- Mapeamento manual e revisável das colunas.
+- Prévia do arquivo antes da gravação.
+- Diagnóstico de linhas válidas, cobertura, produtos e totais.
+- Agregação por SKU/produto e canal.
+- Conversão de catálogo em oportunidades próprias e análises.
+- Conversão de vendas e tráfego em testes reais.
+- Estratégias para somar períodos ou substituir métricas.
+- Detecção de reimportação do mesmo arquivo por fingerprint.
+- Histórico local dos 50 lotes mais recentes.
+- Exportação do lote e do CSV normalizado.
+- Modelos para produtos, vendas e métricas.
+- Backup v0.4 com histórico de importações.
+
+### Privacidade e segurança
+
+- Arquivos são processados localmente no navegador.
+- O CSV bruto não é armazenado no histórico.
+- Limite de 8 MB e 20.000 linhas por lote.
+- Conteúdo exibido na interface é escapado.
+- Nenhuma credencial é adicionada às exportações.
+
+### Compatibilidade
+
+- Oportunidades, análises e testes importados usam os mesmos formatos das versões anteriores.
+- Backups antigos continuam válidos.
+- O modo local, a nuvem, o histórico e a resolução de conflitos permanecem disponíveis.
+- PWA atualizado para funcionamento offline do módulo de importação.
+
 ## 0.3.3 — Histórico e Conflitos
 
 ### Adicionado
