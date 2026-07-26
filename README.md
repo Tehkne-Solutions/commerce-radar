@@ -2,7 +2,7 @@
 
 Produto web para ajudar empreendedores a identificar sinais, decidir **o que vender, onde vender, como validar, quanto capital será necessário e se a operação realmente gera caixa**.
 
-## MVP 0.5.3
+## MVP 0.5.4
 
 - Radar com 20 oportunidades iniciais.
 - Radar de tendências com fontes, validade, confiança e contradições.
@@ -10,6 +10,8 @@ Produto web para ajudar empreendedores a identificar sinais, decidir **o que ven
 - Responsáveis, calendário semanal/mensal e alertas de revisão.
 - Indicadores de cumprimento, capacidade e sobrecarga por responsável.
 - Rotina operacional diária e snapshots históricos.
+- Metas de SLA, comparação semanal e desvios recorrentes.
+- Fechamento semanal com decisões, ações e exportação.
 - Histórico auditável de alterações por sinal.
 - Cadastro de oportunidades próprias.
 - Score, margem, preço mínimo e ranking de canais.
@@ -52,6 +54,7 @@ Registrar sinais e fontes
 → atribuir responsáveis e prazos
 → acompanhar cumprimento e capacidade
 → executar a rotina operacional
+→ avaliar SLA e fechar a semana
 → priorizar tendências
 → criar oportunidade
 → analisar
@@ -136,6 +139,29 @@ A capacidade é uma premissa configurável e não representa automaticamente hor
 
 Guia: [`docs/REVIEW_OPERATIONS.md`](docs/REVIEW_OPERATIONS.md).
 
+## SLA e fechamento semanal
+
+A tela **SLA e fechamento** consolida os snapshots de segunda-feira a domingo e oferece:
+
+- meta mínima de cumprimento da equipe;
+- limite de atrasos da equipe;
+- utilização máxima;
+- metas individuais de cumprimento e atrasos;
+- comparação com a semana anterior;
+- tendência das últimas oito semanas;
+- classificação Dentro do SLA, Atenção, Fora do SLA ou Sem dados;
+- desvios recorrentes por responsável;
+- decisões da semana;
+- ações com responsável, prazo e estado;
+- fechamento em rascunho ou concluído;
+- exportação Markdown.
+
+Quando existem vários snapshots na semana, o cumprimento é calculado pela média disponível e atrasos usam o snapshot mais recente. Ausência de snapshot não é convertida em estimativa.
+
+Desvios recorrentes servem para investigação de processo e não devem ser usados isoladamente para avaliação de pessoas.
+
+Guia: [`docs/SLA_WEEKLY_CLOSE.md`](docs/SLA_WEEKLY_CLOSE.md).
+
 ## Importação de dados
 
 A tela **Importar dados** aceita arquivos de até 8 MB e processa até 20.000 linhas no navegador. Reconhece separadores comuns, BOM, valores monetários pt-BR e cabeçalhos em português ou inglês.
@@ -169,7 +195,7 @@ Guias:
 
 ## Backup e sincronização
 
-O backup da v0.5.3 contém:
+O backup da v0.5.4 contém:
 
 ```text
 analyses
@@ -194,6 +220,8 @@ trendAlertState
 trendOperationalSettings
 trendComplianceSnapshots
 trendRoutineRuns
+trendSlaSettings
+trendWeeklyClosings
 ```
 
 Backups antigos continuam compatíveis. Os mesmos campos entram no workspace sincronizado, sem nova migration, pois o estado é armazenado como JSON versionado.
@@ -231,13 +259,15 @@ Guia: [`docs/AUTOMATED_ACTIVATION.md`](docs/AUTOMATED_ACTIVATION.md).
 - Revisar uma fonte não comprova que a informação esteja correta.
 - Adiar uma revisão não renova a validade da evidência.
 - Reagendar no calendário não atualiza a observação da fonte.
-- Cumprimento mede execução registrada, não qualidade da revisão.
+- Cumprimento e SLA medem execução registrada, não qualidade da revisão.
 - Capacidade semanal é uma premissa operacional, não produtividade garantida.
 - Snapshots representam o momento da captura e não recriam o passado.
+- Semanas sem snapshots permanecem sem dados.
+- Desvios recorrentes não substituem gestão de pessoas ou análise de causa.
 - Notificações locais não funcionam com o aplicativo totalmente fechado.
 - A qualidade dos resultados depende das fontes e dados informados.
 - Projeções não garantem venda, lucro ou liquidez.
-- A ferramenta não substitui contabilidade, apuração fiscal, conciliação bancária, análise de crédito, gestão de pessoas ou aconselhamento financeiro.
+- A ferramenta não substitui contabilidade, apuração fiscal, conciliação bancária, análise de crédito, governança corporativa, gestão de pessoas ou aconselhamento financeiro.
 - Não há conexão OAuth direta com marketplaces nesta versão.
 
 ## Publicação
@@ -250,8 +280,8 @@ A `main` é publicada automaticamente pelo GitHub Pages.
 
 ## Roadmap
 
-- v0.5.4: metas de SLA, tendências operacionais e fechamento semanal da equipe.
 - v0.6: recomendações com evidências e ranking temporal.
+- v0.6.1: explicabilidade das recomendações e trilha de decisão.
 - v1.0: inteligência de mercado e recomendações assistidas.
 
 ## Assinatura

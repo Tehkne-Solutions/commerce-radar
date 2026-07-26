@@ -1,0 +1,36 @@
+name: Validar SLA e fechamento semanal
+
+on:
+  pull_request:
+    paths:
+      - 'trend-sla.js'
+      - 'trend-sla.css'
+      - 'trend-operations.js'
+      - 'cloud-bootstrap.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/SLA_WEEKLY_CLOSE.md'
+      - 'tests/validate-sla.js'
+      - '.github/workflows/validate-sla-weekly-close.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-sla-weekly-close:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe
+        run: |
+          node --check trend-sla.js
+          node --check cloud-bootstrap.js
+          node --check sw.js
+          node --check tests/validate-sla.js
+
+      - name: Executar cenários de SLA e fechamento
+        run: node tests/validate-sla.js
