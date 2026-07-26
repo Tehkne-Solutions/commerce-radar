@@ -29,17 +29,10 @@ window.COMMERCE_RADAR_DATA={
 
 if(typeof document!=='undefined'){
   window.addEventListener('DOMContentLoaded',()=>{
-    if(!document.querySelector('link[href="./cloud.css"]')){
-      const link=document.createElement('link');link.rel='stylesheet';link.href='./cloud.css';document.head.append(link);
-    }
-    const config=document.createElement('script');
-    config.src='./cloud-config.js';
-    config.onload=()=>{
-      const cloud=document.createElement('script');
-      cloud.src='./cloud.js';
-      cloud.onload=()=>{const bootstrap=document.createElement('script');bootstrap.src='./cloud-bootstrap.js';document.body.append(bootstrap)};
-      document.body.append(cloud);
-    };
-    document.body.append(config);
+    const addStyle=href=>{if(!document.querySelector(`link[href="${href}"]`)){const link=document.createElement('link');link.rel='stylesheet';link.href=href;document.head.append(link)}};
+    const addScript=(src,onload)=>{const script=document.createElement('script');script.src=src;if(onload)script.onload=onload;document.body.append(script)};
+    addStyle('./cloud.css');
+    addStyle('./cloud-diagnostics.css');
+    addScript('./cloud-config.js',()=>addScript('./cloud.js',()=>addScript('./cloud-bootstrap.js',()=>addScript('./cloud-diagnostics.js'))));
   },{once:true});
 }
