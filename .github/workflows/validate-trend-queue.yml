@@ -37,10 +37,7 @@ jobs:
           const store=new Map();
           global.window=undefined;
           global.document=undefined;
-          global.localStorage={
-            getItem:key=>store.has(key)?store.get(key):null,
-            setItem:(key,value)=>store.set(key,String(value))
-          };
+          global.localStorage={getItem:key=>store.has(key)?store.get(key):null,setItem:(key,value)=>store.set(key,String(value))};
           require('./trend-radar.js');
           require('./trend-queue.js');
           const trends=global.CommerceRadarTrends;
@@ -51,11 +48,7 @@ jobs:
             {id:'soon',topic:'Produto próximo',sourceType:'marketplace',sourceName:'Canal',observedAt:'2026-07-20',validDays:10,growth:4,demand:4,competition:3,margin:4,risk:2,confidence:4,evidence:'Evidência recente'},
             {id:'current',topic:'Produto em dia',sourceType:'internal',sourceName:'Interno',observedAt:'2026-07-25',validDays:60,growth:3,demand:3,competition:3,margin:3,risk:3,confidence:5,evidence:'Dado interno'}
           ];
-          const metas=[
-            {signalId:'expired',priority:'low'},
-            {signalId:'soon',priority:'high'},
-            {signalId:'current',priority:'medium'}
-          ];
+          const metas=[{signalId:'expired',priority:'low'},{signalId:'soon',priority:'high'},{signalId:'current',priority:'medium'}];
           const built=queue.buildQueue(rows,metas,'2026-07-26');
           if(built.length!==3)throw new Error('Fila não contém todos os sinais');
           const expired=built.find(item=>item.signal.id==='expired');
@@ -90,7 +83,7 @@ jobs:
           const sw=fs.readFileSync('sw.js','utf8');
           const docs=fs.readFileSync('docs/SOURCE_UPDATE_QUEUE.md','utf8');
           const version=fs.readFileSync('VERSION','utf8').trim();
-          for(const marker of ['Fila de atualização de fontes','trendReviewQueue','trendSignalHistory',"version: '0.5.1'",'Trilha de auditoria','Tehkné Solutions'])if(!code.includes(marker))throw new Error(`Marcador ausente: ${marker}`);
+          for(const marker of ['Fila de atualização de fontes','trendReviewQueue','trendSignalHistory',"version:'0.5.1'",'Trilha de auditoria','Tehkné Solutions'])if(!code.includes(marker))throw new Error(`Marcador ausente: ${marker}`);
           for(const asset of ['./trend-queue.css','./trend-queue.js']){if(!data.includes(asset))throw new Error(`Loader ausente: ${asset}`);if(!sw.includes(asset))throw new Error(`Cache offline ausente: ${asset}`)}
           if(data.indexOf('./trend-queue.js')<data.indexOf('./trend-radar.js'))throw new Error('Fila deve carregar depois do Radar de tendências');
           if(!css.includes('.tqSummary')||!css.includes('.tqHistoryEntry')||css.length<1800)throw new Error('Estilos da fila incompletos');
