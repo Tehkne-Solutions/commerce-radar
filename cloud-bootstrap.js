@@ -15,64 +15,39 @@ function inject(){
   button.onclick=()=>{
     const email=byId('cloudEmail')?.value?.trim();
     const password=byId('cloudPassword')?.value||'';
-    if(!/^\S+@\S+\.\S+$/.test(email||'')||password.length<8){
-      notify('Informe e-mail válido e senha com pelo menos 8 caracteres.',true);
-      return;
-    }
-    setPending(true);
-    signUp.click();
-    notify('Criando conta. O workspace será enviado automaticamente após o login.');
-    watchSession();
+    if(!/^\S+@\S+\.\S+$/.test(email||'')||password.length<8){notify('Informe e-mail válido e senha com pelo menos 8 caracteres.',true);return}
+    setPending(true);signUp.click();notify('Criando conta. O workspace será enviado automaticamente após o login.');watchSession();
   };
   if(isPending())watchSession();
   return true;
 }
 function watchSession(){
-  clearInterval(watchSession.timer);
-  let attempts=0;
+  clearInterval(watchSession.timer);let attempts=0;
   watchSession.timer=setInterval(()=>{
-    attempts++;
-    const session=readSession();
-    const push=byId('cloudPush');
-    if(session?.access_token&&session?.user&&push&&!push.disabled){
-      clearInterval(watchSession.timer);
-      const previous=localStorage.getItem(LAST_SYNC_KEY);
-      push.click();
-      waitForSync(previous);
-      return;
-    }
+    attempts++;const session=readSession();const push=byId('cloudPush');
+    if(session?.access_token&&session?.user&&push&&!push.disabled){clearInterval(watchSession.timer);const previous=localStorage.getItem(LAST_SYNC_KEY);push.click();waitForSync(previous);return}
     if(attempts>=1200)clearInterval(watchSession.timer);
   },500);
 }
 function waitForSync(previous){
-  let attempts=0;
-  const timer=setInterval(()=>{
-    attempts++;
-    const current=localStorage.getItem(LAST_SYNC_KEY);
-    if(current&&current!==previous){
-      clearInterval(timer);
-      setPending(false);
-      notify('Conta ativada e workspace enviado para a nuvem.');
-    }else if(attempts>=120){
-      clearInterval(timer);
-      notify('Conta conectada. Use “Enviar este dispositivo” para concluir.',true);
-    }
+  let attempts=0;const timer=setInterval(()=>{
+    attempts++;const current=localStorage.getItem(LAST_SYNC_KEY);
+    if(current&&current!==previous){clearInterval(timer);setPending(false);notify('Conta ativada e workspace enviado para a nuvem.')}
+    else if(attempts>=120){clearInterval(timer);notify('Conta conectada. Use “Enviar este dispositivo” para concluir.',true)}
   },500);
 }
+function addStyle(href){if(!document.querySelector(`link[href="${href}"]`)){const link=document.createElement('link');link.rel='stylesheet';link.href=href;document.head.append(link)}}
+function addScript(src){if(document.querySelector(`script[src="${src}"]`))return false;const script=document.createElement('script');script.src=src;document.body.append(script);return true}
 function loadReviewCalendar(){
-  if(!document.querySelector('link[href="./trend-calendar.css"]')){
-    const link=document.createElement('link');link.rel='stylesheet';link.href='./trend-calendar.css';document.head.append(link);
-  }
+  addStyle('./trend-calendar.css');
   if(document.querySelector('script[src="./trend-calendar.js"]'))return;
-  let attempts=0;
-  const timer=setInterval(()=>{
-    attempts++;
-    if(window.CommerceRadarTrendQueue){
-      clearInterval(timer);
-      const script=document.createElement('script');script.src='./trend-calendar.js';document.body.append(script);
-    }else if(attempts>240)clearInterval(timer);
-  },50);
+  let attempts=0;const timer=setInterval(()=>{attempts++;if(window.CommerceRadarTrendQueue){clearInterval(timer);addScript('./trend-calendar.js')}else if(attempts>240)clearInterval(timer)},50);
 }
-function boot(){loadReviewCalendar();if(inject())return;let attempts=0;const timer=setInterval(()=>{attempts++;if(inject()||attempts>100)clearInterval(timer)},100)}
+function loadReviewOperations(){
+  addStyle('./trend-operations.css');
+  if(document.querySelector('script[src="./trend-operations.js"]'))return;
+  let attempts=0;const timer=setInterval(()=>{attempts++;if(window.CommerceRadarReviewCalendar){clearInterval(timer);addScript('./trend-operations.js')}else if(attempts>300)clearInterval(timer)},50);
+}
+function boot(){loadReviewCalendar();loadReviewOperations();if(inject())return;let attempts=0;const timer=setInterval(()=>{attempts++;if(inject()||attempts>100)clearInterval(timer)},100)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
