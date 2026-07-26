@@ -26,3 +26,12 @@ window.COMMERCE_RADAR_DATA={
     {id:'productivity-planner',name:'Planner digital para operação de e-commerce',category:'negocios',model:'proprio',capital:0,ticket:49,margin:94,score:84,channel:'Instagram + WhatsApp',demand:4,visual:4,recurrence:4,different:4,competition:3,risk:1,problem:'Organizar pesquisa, conteúdo, pedidos e reposição.',test:'Disponibilizar versão gratuita e medir ativação.'}
   ]
 };
+
+if(typeof document!=='undefined'){
+  window.addEventListener('DOMContentLoaded',()=>{
+    if(!document.querySelector('link[href="./cloud.css"]')){
+      const link=document.createElement('link');link.rel='stylesheet';link.href='./cloud.css';document.head.append(link);
+    }
+    const config=document.createElement('script');config.src='./cloud-config.js';config.onload=()=>{const script=document.createElement('script');script.src='./cloud.js';document.body.append(script)};document.body.append(config);
+  },{once:true});
+}
