@@ -35,7 +35,7 @@ const COMMON={
  order:['order id','order number','numero do pedido','número do pedido','no do pedido','numero da venda','número da venda','id da venda','name','pedido'],
  date:['date','order date','created at','data da venda','data de criacao do pedido','data de criação do pedido','paid at'],
  product:['product','product name','nome do produto','titulo da publicacao','título da publicação','lineitem name','item name'],
- sku:['sku','seller sku','variant sku','numero de referencia sku','número de referência sku','product sku'],
+ sku:['sku','lineitem sku','seller sku','variant sku','numero de referencia sku','número de referência sku','product sku'],
  quantity:['quantity','quantidade','lineitem quantity','item quantity'],
  unitPrice:['unit price','preco unitario','preço unitário','deal price','preco acordado','preço acordado','lineitem price','item price'],
  lineRevenue:['line total','item total','subtotal do produto','product subtotal','receita por produtos','gross price','lineitem subtotal','net sales'],
