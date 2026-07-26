@@ -32,6 +32,14 @@ if(typeof document!=='undefined'){
     if(!document.querySelector('link[href="./cloud.css"]')){
       const link=document.createElement('link');link.rel='stylesheet';link.href='./cloud.css';document.head.append(link);
     }
-    const config=document.createElement('script');config.src='./cloud-config.js';config.onload=()=>{const script=document.createElement('script');script.src='./cloud.js';document.body.append(script)};document.body.append(config);
+    const config=document.createElement('script');
+    config.src='./cloud-config.js';
+    config.onload=()=>{
+      const cloud=document.createElement('script');
+      cloud.src='./cloud.js';
+      cloud.onload=()=>{const bootstrap=document.createElement('script');bootstrap.src='./cloud-bootstrap.js';document.body.append(bootstrap)};
+      document.body.append(cloud);
+    };
+    document.body.append(config);
   },{once:true});
 }
