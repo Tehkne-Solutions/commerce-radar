@@ -20,6 +20,7 @@ jobs:
         run: |
           node --check app.js
           node --check data.js
+          node --check v021.js
           node --check sw.js
 
       - name: Validar catálogo
@@ -33,6 +34,25 @@ jobs:
           const ids = data.opportunities.map(item => item.id);
           if (new Set(ids).size !== ids.length) throw new Error('Há IDs duplicados no catálogo');
           console.log(`Catálogo válido: ${ids.length} oportunidades.`);
+          NODE
+
+      - name: Validar módulo operacional
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const code = fs.readFileSync('v021.js', 'utf8');
+          const required = [
+            'customOpportunities',
+            'launchPlans',
+            'Restaurar backup',
+            'Planos de lançamento',
+            "version:'0.2.1'",
+            'Tehkné Solutions'
+          ];
+          for (const marker of required) {
+            if (!code.includes(marker)) throw new Error(`Marcador ausente no módulo v0.2.1: ${marker}`);
+          }
+          console.log('Módulo v0.2.1 contém cadastro, restauração, planos e assinatura.');
           NODE
 
       - name: Validar HTML, manifesto e referências
@@ -59,7 +79,8 @@ jobs:
                       self.styles.append(attrs.get('href'))
 
           html = Path('index.html').read_text(encoding='utf-8')
-          js = Path('app.js').read_text(encoding='utf-8')
+          app = Path('app.js').read_text(encoding='utf-8')
+          ext = Path('v021.js').read_text(encoding='utf-8')
           parser = IdParser()
           parser.feed(html)
 
@@ -67,21 +88,25 @@ jobs:
           if duplicates:
               raise SystemExit(f'IDs HTML duplicados: {duplicates}')
 
-          referenced = set(re.findall(r"\$\('([^']+)'\)", js))
+          referenced = set(re.findall(r"\$\('([^']+)'\)", app))
           missing = sorted(referenced - set(parser.ids))
           if missing:
-              raise SystemExit(f'IDs referenciados e ausentes: {missing}')
+              raise SystemExit(f'IDs estáticos referenciados e ausentes: {missing}')
 
-          expected_scripts = {'./data.js', './app.js'}
-          if set(parser.scripts) != expected_scripts:
-              raise SystemExit(f'Scripts inesperados: {parser.scripts}')
-          if parser.styles != ['./styles.css']:
+          expected_scripts = ['./data.js', './app.js', './v021.js']
+          if parser.scripts != expected_scripts:
+              raise SystemExit(f'Scripts inesperados ou fora de ordem: {parser.scripts}')
+          if parser.styles != ['./styles.css', './v021.css']:
               raise SystemExit(f'Folhas de estilo inesperadas: {parser.styles}')
+
+          for marker in ('customModal', 'restoreModal', 'launchModal', 'launchGrid'):
+              if marker not in ext:
+                  raise SystemExit(f'Interface dinâmica ausente: {marker}')
 
           manifest = json.loads(Path('manifest.webmanifest').read_text(encoding='utf-8'))
           for field in ('name', 'short_name', 'start_url', 'display'):
               if not manifest.get(field):
                   raise SystemExit(f'Campo ausente no manifesto: {field}')
 
-          print(f'HTML válido: {len(parser.ids)} IDs únicos e {len(referenced)} referências verificadas.')
+          print(f'HTML válido: {len(parser.ids)} IDs estáticos, scripts e estilos verificados.')
           PY
