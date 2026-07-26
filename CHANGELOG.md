@@ -1,5 +1,38 @@
 # Changelog — Commerce Radar
 
+## 0.5.0 — Radar de Tendências
+
+### Adicionado
+
+- Área **Radar de tendências**.
+- Cadastro de sinais com fonte, URL, geografia, período e evidência.
+- Data de observação e validade configurável em dias.
+- Score ponderado de crescimento, demanda, margem, concorrência, risco, confiança, frescor e qualidade da fonte.
+- Agrupamento de múltiplas evidências por tema normalizado.
+- Bônus limitado para diversidade de fontes.
+- Detecção e penalização de sinais contraditórios.
+- Estados Em alta, Promissor, Monitorar, Fraco e Vencido.
+- Filtros por texto, categoria, fonte, status e validade.
+- Conversão de tendência em oportunidade própria e teste de pesquisa.
+- Importação e exportação CSV de sinais.
+- Modelo de arquivo para atualização assistida.
+- Inclusão de `trendSignals` e `trendSettings` no backup e na sincronização.
+- Documentação em `docs/TREND_RADAR.md`.
+- Workflow específico para score, validade, agrupamento, importação e integração.
+
+### Privacidade e segurança
+
+- Nenhuma fonte é consultada ou raspada automaticamente.
+- Evidências e URLs só são armazenadas quando informadas pelo usuário.
+- Sinais vencidos deixam de orientar o ranking padrão, mas permanecem auditáveis.
+- O score é um mecanismo de priorização e não garante venda, demanda ou lucro.
+
+### Compatibilidade
+
+- Não exige nova migration do Supabase.
+- Backups antigos permanecem válidos.
+- PWA atualizado para funcionamento offline do radar.
+
 ## 0.4.5 — Metas, Orçamento e Projeção de Caixa
 
 ### Adicionado
