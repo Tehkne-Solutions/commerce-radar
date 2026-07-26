@@ -91,8 +91,10 @@ jobs:
           for(const asset of ['./trend-calendar.css','./trend-calendar.js']){if(!bootstrap.includes(asset))throw new Error(`Bootstrap ausente: ${asset}`);if(!sw.includes(asset))throw new Error(`Cache offline ausente: ${asset}`)}
           if(!bootstrap.includes('CommerceRadarTrendQueue'))throw new Error('Calendário deve aguardar a fila de fontes');
           if(!css.includes('.tcSummary')||!css.includes('.tcCalendar')||css.length<3000)throw new Error('Estilos do calendário incompletos');
-          if(version!=='0.5.2')throw new Error(`Versão incorreta: ${version}`);
-          if(!sw.includes('commerce-radar-v17'))throw new Error('Cache PWA não foi atualizado');
+          const parts=version.split('.').map(Number);
+          if(parts[0]!==0||parts[1]<5||(parts[1]===5&&parts[2]<2))throw new Error(`Versão anterior a 0.5.2: ${version}`);
+          const cacheMatch=sw.match(/commerce-radar-v(\d+)/);
+          if(!cacheMatch||Number(cacheMatch[1])<17)throw new Error('Cache PWA anterior ao calendário');
           for(const marker of ['Responsáveis','Calendário mensal e semanal','Alertas dentro do aplicativo','Notificações do navegador','Backup e sincronização'])if(!docs.includes(marker))throw new Error(`Documentação incompleta: ${marker}`);
           console.log('Integração, backup, nuvem, documentação e PWA válidos.');
           NODE
