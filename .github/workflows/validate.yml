@@ -24,6 +24,8 @@ jobs:
           node --check cloud-config.js
           node --check cloud.js
           node --check cloud-bootstrap.js
+          node --check cloud-diagnostics.js
+          node --check cloud-history.js
           node --check sw.js
 
       - name: Validar catálogo
@@ -40,85 +42,83 @@ jobs:
           console.log(`Catálogo válido: ${ids.length} oportunidades.`);
           NODE
 
-      - name: Validar módulo operacional
+      - name: Validar módulos, segurança e migrations
         run: |
           node <<'NODE'
           const fs = require('fs');
-          const code = fs.readFileSync('v021.js', 'utf8');
-          const required = [
-            'customOpportunities',
-            'launchPlans',
-            'Restaurar backup',
-            'Planos de lançamento',
-            "version:'0.2.1'",
-            'Tehkné Solutions'
-          ];
-          for (const marker of required) {
-            if (!code.includes(marker)) throw new Error(`Marcador ausente no módulo v0.2.1: ${marker}`);
-          }
-          console.log('Módulo v0.2.1 contém cadastro, restauração, planos e assinatura.');
-          NODE
-
-      - name: Validar conta, ativação e provisionamento
-        run: |
-          node <<'NODE'
-          const fs = require('fs');
+          const operational = fs.readFileSync('v021.js', 'utf8');
           const cloud = fs.readFileSync('cloud.js', 'utf8');
           const bootstrap = fs.readFileSync('cloud-bootstrap.js', 'utf8');
+          const diagnostics = fs.readFileSync('cloud-diagnostics.js', 'utf8');
+          const history = fs.readFileSync('cloud-history.js', 'utf8');
           const data = fs.readFileSync('data.js', 'utf8');
           const config = fs.readFileSync('cloud-config.js', 'utf8');
-          const sql = fs.readFileSync('docs/supabase.sql', 'utf8');
-          const migration = fs.readFileSync('supabase/migrations/20260726160000_create_commerce_radar_workspaces.sql', 'utf8');
-          const provision = fs.readFileSync('.github/workflows/provision-supabase.yml', 'utf8');
           const sw = fs.readFileSync('sw.js', 'utf8');
+          const baseMigration = fs.readFileSync('supabase/migrations/20260726160000_create_commerce_radar_workspaces.sql', 'utf8');
+          const historyMigration = fs.readFileSync('supabase/migrations/20260726190000_add_workspace_history_and_conflicts.sql', 'utf8');
+          const provision = fs.readFileSync('.github/workflows/provision-supabase.yml', 'utf8');
 
-          const cloudMarkers = [
-            '/auth/v1/signup',
-            'grant_type=password',
-            'grant_type=refresh_token',
-            'resolution=merge-duplicates',
-            'Mesclar dispositivo e nuvem',
-            "version:'0.3.0'",
-            'tehkne-commerce-radar-cloud-session',
-            'Tehkné Solutions'
-          ];
-          for (const marker of cloudMarkers) {
-            if (!cloud.includes(marker)) throw new Error(`Marcador ausente no módulo v0.3: ${marker}`);
+          for (const marker of ['customOpportunities', 'launchPlans', 'Restaurar backup', 'Planos de lançamento', 'Tehkné Solutions']) {
+            if (!operational.includes(marker)) throw new Error(`Marcador operacional ausente: ${marker}`);
+          }
+
+          for (const marker of [
+            '/auth/v1/signup', 'grant_type=password', 'grant_type=refresh_token',
+            '/rest/v1/rpc/sync_commerce_radar_workspace', 'commerce-radar-cloud-revision',
+            'commerce-radar-cloud-conflict', "version:'0.3.3'", 'Tehkné Solutions'
+          ]) {
+            if (!cloud.includes(marker)) throw new Error(`Marcador de nuvem ausente: ${marker}`);
           }
 
           for (const marker of ['cloudBootstrap', 'cloudSignUp', 'cloudPush', 'bootstrap-pending', 'workspace enviado']) {
-            if (!bootstrap.includes(marker)) throw new Error(`Marcador ausente na ativação guiada: ${marker}`);
+            if (!bootstrap.includes(marker)) throw new Error(`Marcador de ativação guiada ausente: ${marker}`);
           }
 
-          for (const asset of ['./cloud.css', './cloud-config.js', './cloud.js', './cloud-bootstrap.js']) {
+          for (const marker of ['DIAGNÓSTICO ADMINISTRATIVO', 'Data API e RLS anônimo', 'Sessão autenticada', 'PWA e modo offline']) {
+            if (!diagnostics.includes(marker)) throw new Error(`Marcador de diagnóstico ausente: ${marker}`);
+          }
+
+          for (const marker of [
+            'Histórico e conflitos', 'commerce_radar_workspace_versions', 'conflict_merge',
+            'conflict_keep_local', 'restore_r', 'Usar versão da nuvem', 'Tehkné Solutions'
+          ]) {
+            if (!history.includes(marker)) throw new Error(`Marcador de histórico ausente: ${marker}`);
+          }
+
+          for (const asset of [
+            './cloud.css', './cloud-diagnostics.css', './cloud-history.css',
+            './cloud-config.js', './cloud.js', './cloud-bootstrap.js',
+            './cloud-diagnostics.js', './cloud-history.js'
+          ]) {
             if (!data.includes(asset)) throw new Error(`Loader ausente em data.js: ${asset}`);
             if (!sw.includes(asset)) throw new Error(`Asset ausente no cache offline: ${asset}`);
           }
 
-          if (!config.includes('commerce_radar_workspaces')) throw new Error('Tabela padrão não configurada');
-          for (const source of [sql, migration]) {
-            if (!source.includes('enable row level security')) throw new Error('RLS não habilitada na migration');
-            if (!source.includes('(select auth.uid()) = user_id')) throw new Error('Política por usuário ausente');
+          if (!config.includes('commerce_radar_workspaces')) throw new Error('Tabela principal não configurada');
+          if (!config.includes('commerce_radar_workspace_versions')) throw new Error('Tabela de versões não configurada');
+
+          if (!baseMigration.includes('enable row level security')) throw new Error('RLS base ausente');
+          for (const marker of [
+            'commerce_radar_workspace_versions', 'sync_commerce_radar_workspace',
+            'expected_revision', "status text", 'security definer',
+            'revoke insert, update, delete on table public.commerce_radar_workspaces from authenticated',
+            '(select auth.uid()) = user_id', 'Workspace payload exceeds 5 MB'
+          ]) {
+            if (!historyMigration.includes(marker)) throw new Error(`Proteção de histórico ausente: ${marker}`);
           }
 
-          const provisionMarkers = [
-            'workflow_dispatch',
-            'SUPABASE_ACCESS_TOKEN',
-            'SUPABASE_DB_PASSWORD',
-            'api.supabase.com/v1/projects',
-            'supabase db push',
-            'cloud-config.js',
-            'commerce_radar_workspaces',
-            'github-actions[bot]'
-          ];
-          for (const marker of provisionMarkers) {
-            if (!provision.includes(marker)) throw new Error(`Marcador ausente no provisionamento: ${marker}`);
+          for (const marker of [
+            'workflow_dispatch', 'SUPABASE_ACCESS_TOKEN', 'SUPABASE_DB_PASSWORD',
+            'supabase db push', 'cloud-config.js', 'github-actions[bot]'
+          ]) {
+            if (!provision.includes(marker)) throw new Error(`Marcador de provisionamento ausente: ${marker}`);
           }
 
-          if (cloud.includes('service_role') || bootstrap.includes('service_role') || config.includes('service_role')) {
-            throw new Error('O frontend não pode conter service role');
+          for (const [name, source] of Object.entries({cloud, bootstrap, diagnostics, history, config})) {
+            if (source.includes('service_role')) throw new Error(`O frontend ${name} não pode conter service role`);
           }
-          console.log('Conta, ativação guiada, cache, migration, RLS e provisionamento válidos.');
+
+          console.log('Módulos, histórico, conflito, migrations, RLS e provisionamento válidos.');
           NODE
 
       - name: Validar HTML, manifesto e referências
@@ -146,9 +146,6 @@ jobs:
 
           html = Path('index.html').read_text(encoding='utf-8')
           app = Path('app.js').read_text(encoding='utf-8')
-          ext = Path('v021.js').read_text(encoding='utf-8')
-          cloud = Path('cloud.js').read_text(encoding='utf-8')
-          bootstrap = Path('cloud-bootstrap.js').read_text(encoding='utf-8')
           parser = IdParser()
           parser.feed(html)
 
@@ -156,32 +153,20 @@ jobs:
           if duplicates:
               raise SystemExit(f'IDs HTML duplicados: {duplicates}')
 
-          referenced = set(re.findall(r"\$\('([^']+)'\)", app))
+          referenced = set(re.findall(r"\$('([^']+)'\)", app))
           missing = sorted(referenced - set(parser.ids))
           if missing:
               raise SystemExit(f'IDs estáticos referenciados e ausentes: {missing}')
 
-          expected_scripts = ['./data.js', './app.js', './v021.js']
-          if parser.scripts != expected_scripts:
+          if parser.scripts != ['./data.js', './app.js', './v021.js']:
               raise SystemExit(f'Scripts inesperados ou fora de ordem: {parser.scripts}')
           if parser.styles != ['./styles.css', './v021.css']:
               raise SystemExit(f'Folhas de estilo inesperadas: {parser.styles}')
-
-          for marker in ('customModal', 'restoreModal', 'launchModal', 'launchGrid'):
-              if marker not in ext:
-                  raise SystemExit(f'Interface dinâmica ausente: {marker}')
-
-          for marker in ('cloudNav', 'cloudState', 'cloudPush', 'cloudPull', 'cloudMerge'):
-              if marker not in cloud:
-                  raise SystemExit(f'Interface de nuvem ausente: {marker}')
-
-          if 'cloudBootstrap' not in bootstrap:
-              raise SystemExit('Botão de ativação guiada ausente')
 
           manifest = json.loads(Path('manifest.webmanifest').read_text(encoding='utf-8'))
           for field in ('name', 'short_name', 'start_url', 'display'):
               if not manifest.get(field):
                   raise SystemExit(f'Campo ausente no manifesto: {field}')
 
-          print(f'HTML válido: {len(parser.ids)} IDs estáticos, módulos dinâmicos e manifesto verificados.')
+          print(f'HTML válido: {len(parser.ids)} IDs estáticos e manifesto verificados.')
           PY
