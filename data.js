@@ -33,6 +33,7 @@ if(typeof document!=='undefined'){
     const addScript=(src,onload)=>{const script=document.createElement('script');script.src=src;if(onload)script.onload=onload;document.body.append(script)};
     addStyle('./cloud.css');
     addStyle('./cloud-diagnostics.css');
-    addScript('./cloud-config.js',()=>addScript('./cloud.js',()=>addScript('./cloud-bootstrap.js',()=>addScript('./cloud-diagnostics.js'))));
+    addStyle('./cloud-history.css');
+    addScript('./cloud-config.js',()=>addScript('./cloud.js',()=>addScript('./cloud-bootstrap.js',()=>addScript('./cloud-diagnostics.js',()=>addScript('./cloud-history.js')))));
   },{once:true});
 }
