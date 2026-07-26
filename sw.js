@@ -1,5 +1,5 @@
-const CACHE = 'commerce-radar-v10';
-const ASSETS = ['./', './index.html', './styles.css', './v021.css', './cloud.css', './cloud-diagnostics.css', './cloud-history.css', './import.css', './marketplace-adapters.css', './data.js', './app.js', './v021.js', './cloud-config.js', './cloud.js', './cloud-bootstrap.js', './cloud-diagnostics.js', './cloud-history.js', './marketplace-adapters.js', './import.js', './manifest.webmanifest'];
+const CACHE = 'commerce-radar-v11';
+const ASSETS = ['./', './index.html', './styles.css', './v021.css', './cloud.css', './cloud-diagnostics.css', './cloud-history.css', './import.css', './marketplace-adapters.css', './financial-audit.css', './data.js', './app.js', './v021.js', './cloud-config.js', './cloud.js', './cloud-bootstrap.js', './cloud-diagnostics.js', './cloud-history.js', './marketplace-adapters.js', './import.js', './financial-audit.js', './manifest.webmanifest'];
 
 self.addEventListener('install', event => {
   self.skipWaiting();

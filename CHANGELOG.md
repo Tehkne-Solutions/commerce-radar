@@ -1,5 +1,40 @@
 # Changelog — Commerce Radar
 
+## 0.4.2 — Margem Líquida e Auditoria Financeira
+
+### Adicionado
+
+- Área de auditoria financeira por produto e canal.
+- Cálculo de receita líquida, frete líquido, custos totais e lucro líquido.
+- Margem líquida, contribuição antes da mídia e lucro por pedido.
+- CPA, ROAS e ROAS de equilíbrio.
+- Indicadores de taxa, frete, imposto, publicidade, reembolso e custo do produto.
+- Quatro níveis de qualidade: real, parcial, estimado e incompleto.
+- Perfis financeiros editáveis por canal.
+- Reconciliação entre valores observados e custos planejados.
+- Alertas de prejuízo, custo ausente, taxas elevadas, frete pesado, reembolso e mídia abaixo do equilíbrio.
+- Criação de auditoria a partir de testes e lotes importados.
+- Exportação consolidada em CSV e relatório individual em Markdown.
+- Inclusão de auditorias, perfis e lotes de importação no backup.
+- Inclusão dinâmica desses dados na sincronização do workspace.
+- Documentação detalhada em `docs/FINANCIAL_AUDIT.md`.
+- Workflow específico para validar fórmulas e integração.
+
+### Regra de segurança financeira
+
+- Nenhuma tarifa fixa de marketplace é presumida.
+- Valores esperados só são preenchidos a partir de perfis criados pelo usuário.
+- Custos estimados permanecem identificados como estimativa.
+- O sistema não substitui contabilidade ou apuração fiscal.
+
+### Compatibilidade
+
+- Auditorias funcionam em modo local ou sincronizado.
+- Não há nova migration do Supabase.
+- Backups antigos continuam válidos.
+- Importações, adaptadores, histórico e conflitos permanecem disponíveis.
+- O PWA inclui o módulo no cache offline.
+
 ## 0.4.1 — Adaptadores de Marketplaces
 
 ### Adicionado
