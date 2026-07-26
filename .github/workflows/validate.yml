@@ -1,0 +1,87 @@
+name: Validar Commerce Radar
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe JavaScript
+        run: |
+          node --check app.js
+          node --check data.js
+          node --check sw.js
+
+      - name: Validar catálogo
+        run: |
+          node <<'NODE'
+          global.window = {};
+          require('./data.js');
+          const data = window.COMMERCE_RADAR_DATA;
+          if (!data) throw new Error('Catálogo não inicializado');
+          if (data.opportunities.length !== 20) throw new Error(`Esperadas 20 oportunidades; recebidas ${data.opportunities.length}`);
+          const ids = data.opportunities.map(item => item.id);
+          if (new Set(ids).size !== ids.length) throw new Error('Há IDs duplicados no catálogo');
+          console.log(`Catálogo válido: ${ids.length} oportunidades.`);
+          NODE
+
+      - name: Validar HTML, manifesto e referências
+        run: |
+          python <<'PY'
+          import json
+          import re
+          from html.parser import HTMLParser
+          from pathlib import Path
+
+          class IdParser(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.ids = []
+                  self.scripts = []
+                  self.styles = []
+              def handle_starttag(self, tag, attrs):
+                  attrs = dict(attrs)
+                  if 'id' in attrs:
+                      self.ids.append(attrs['id'])
+                  if tag == 'script' and attrs.get('src'):
+                      self.scripts.append(attrs['src'])
+                  if tag == 'link' and attrs.get('rel') == 'stylesheet':
+                      self.styles.append(attrs.get('href'))
+
+          html = Path('index.html').read_text(encoding='utf-8')
+          js = Path('app.js').read_text(encoding='utf-8')
+          parser = IdParser()
+          parser.feed(html)
+
+          duplicates = sorted({item for item in parser.ids if parser.ids.count(item) > 1})
+          if duplicates:
+              raise SystemExit(f'IDs HTML duplicados: {duplicates}')
+
+          referenced = set(re.findall(r"\$\('([^']+)'\)", js))
+          missing = sorted(referenced - set(parser.ids))
+          if missing:
+              raise SystemExit(f'IDs referenciados e ausentes: {missing}')
+
+          expected_scripts = {'./data.js', './app.js'}
+          if set(parser.scripts) != expected_scripts:
+              raise SystemExit(f'Scripts inesperados: {parser.scripts}')
+          if parser.styles != ['./styles.css']:
+              raise SystemExit(f'Folhas de estilo inesperadas: {parser.styles}')
+
+          manifest = json.loads(Path('manifest.webmanifest').read_text(encoding='utf-8'))
+          for field in ('name', 'short_name', 'start_url', 'display'):
+              if not manifest.get(field):
+                  raise SystemExit(f'Campo ausente no manifesto: {field}')
+
+          print(f'HTML válido: {len(parser.ids)} IDs únicos e {len(referenced)} referências verificadas.')
+          PY
