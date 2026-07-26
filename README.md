@@ -1,8 +1,8 @@
 # Commerce Radar — Tehkné Solutions
 
-Produto web para ajudar empreendedores a decidir **o que vender, onde vender, como validar e quando transformar uma hipótese em lançamento**.
+Produto web para ajudar empreendedores a decidir **o que vender, onde vender, como validar e se a operação realmente gera lucro**.
 
-## MVP 0.4.0
+## MVP 0.4.2
 
 - Radar com 20 oportunidades iniciais.
 - Cadastro de oportunidades próprias.
@@ -14,11 +14,11 @@ Produto web para ajudar empreendedores a decidir **o que vender, onde vender, co
 - Histórico de revisões e resolução de conflitos.
 - Provisionamento automatizado do Supabase.
 - Diagnóstico administrativo de Auth, Data API, RLS e PWA.
-- **Importação de CSV, TXT e TSV.**
-- **Detecção automática de separador e cabeçalhos.**
-- **Mapeamento revisável de produtos, custos, vendas e métricas.**
-- **Conversão de arquivos em oportunidades, análises e testes.**
-- **Modelos de produtos, vendas e tráfego para download.**
+- Importação de CSV, TXT e TSV.
+- Adaptadores para Mercado Livre, Shopee, WooCommerce e Shopify.
+- Auditoria de margem líquida por produto e canal.
+- Perfis financeiros, reconciliação e alertas de custo.
+- Exportação financeira em CSV e Markdown.
 - PWA e modo local preservados.
 
 ## Stack
@@ -32,7 +32,7 @@ Produto web para ajudar empreendedores a decidir **o que vender, onde vender, co
 - Supabase CLI e Management API para provisionamento.
 - GitHub Actions e GitHub Pages.
 
-O aplicativo continua funcionando sem conta e sem Supabase. A nuvem é uma extensão opcional do modo local.
+O aplicativo funciona sem conta e sem Supabase. A nuvem é uma extensão opcional do modo local.
 
 ## Executar localmente
 
@@ -42,7 +42,7 @@ python -m http.server 4173
 
 Acesse `http://localhost:4173`.
 
-## Importação CSV
+## Importação de dados
 
 A tela **Importar dados** aceita arquivos de até 8 MB e processa até 20.000 linhas no navegador.
 
@@ -64,27 +64,77 @@ O fluxo é:
 4. analisar qualidade, totais e produtos;
 5. salvar somente o diagnóstico ou aplicar os dados.
 
-### Saídas automáticas
+### Adaptadores
 
-**Produtos e custos** podem gerar:
+A versão 0.4.1 adicionou presets para:
 
-- oportunidades próprias;
-- análises comparáveis;
-- score inicial;
-- margem estimada e canal identificado.
+- Mercado Livre — vendas;
+- Shopee — pedidos;
+- WooCommerce — produtos;
+- WooCommerce — pedidos e Analytics por item;
+- Shopify — produtos;
+- Shopify — pedidos.
 
-**Vendas e tráfego** podem gerar ou atualizar testes com:
+A detecção é revisável. Arquivos genéricos continuam usando o mapeamento da v0.4.
 
-- pedidos;
-- receita;
-- visualizações;
-- cliques;
-- investimento;
-- etapa do funil.
+Guias:
 
-Ao atualizar um teste existente, é possível somar um novo período ou substituir as métricas anteriores.
+- [`docs/CSV_IMPORT.md`](docs/CSV_IMPORT.md)
+- [`docs/MARKETPLACE_ADAPTERS.md`](docs/MARKETPLACE_ADAPTERS.md)
 
-Guia completo: [`docs/CSV_IMPORT.md`](docs/CSV_IMPORT.md).
+## Auditoria financeira
+
+A tela **Auditoria financeira** calcula o resultado real ou estimado por produto e canal.
+
+Entradas principais:
+
+- receita bruta;
+- descontos e reembolsos;
+- custo dos produtos;
+- taxas do canal e de pagamento;
+- frete e subsídio;
+- impostos;
+- publicidade;
+- embalagens e outros custos.
+
+Saídas:
+
+- receita líquida;
+- lucro líquido;
+- margem líquida;
+- contribuição antes da mídia;
+- lucro por pedido;
+- CPA;
+- ROAS;
+- ROAS de equilíbrio;
+- participação de cada custo na receita;
+- alertas e reconciliação contra o perfil planejado.
+
+O sistema não presume tarifas fixas de marketplace. Perfis financeiros são criados pelo usuário e permanecem editáveis em cada auditoria.
+
+Uma auditoria pode começar a partir de:
+
+- um teste real;
+- um produto do histórico de importação;
+- preenchimento manual.
+
+Guia: [`docs/FINANCIAL_AUDIT.md`](docs/FINANCIAL_AUDIT.md).
+
+## Backup
+
+O backup da v0.4.2 contém:
+
+```text
+analyses
+tests
+customOpportunities
+launchPlans
+importBatches
+financialAudits
+financialProfiles
+```
+
+Backups antigos continuam compatíveis. Campos que não existirem são tratados como listas vazias.
 
 ## Ativação automatizada da nuvem
 
@@ -111,7 +161,7 @@ O workflow:
 8. publica a configuração na `main`;
 9. aciona o GitHub Pages.
 
-Guia completo: [`docs/AUTOMATED_ACTIVATION.md`](docs/AUTOMATED_ACTIVATION.md).
+Guia: [`docs/AUTOMATED_ACTIVATION.md`](docs/AUTOMATED_ACTIVATION.md).
 
 ## Sincronização com revisões
 
@@ -127,11 +177,13 @@ Quando ocorre conflito, o usuário pode:
 
 A sincronização automática fica suspensa enquanto houver conflito pendente.
 
-## Histórico e recuperação
+A v0.4.2 amplia dinamicamente o workspace para sincronizar também:
 
-A tela **Conta e sincronização** lista até 30 revisões recentes, com data, dispositivo, motivo, exportação e restauração.
+- lotes de importação;
+- auditorias financeiras;
+- perfis financeiros.
 
-Restaurar não apaga o histórico. O conteúdo escolhido é publicado como uma nova revisão.
+Não é necessária nova migration para esses campos, pois o workspace é armazenado como JSON versionado.
 
 ## Configuração manual alternativa
 
@@ -152,7 +204,8 @@ A publishable key pode ser utilizada no navegador. **Nunca coloque `service_role
 
 - O modo local não transmite dados.
 - Arquivos importados são processados no navegador.
-- O histórico de importações guarda resumos, não o CSV bruto.
+- O CSV bruto não é armazenado no histórico.
+- Auditorias e perfis ficam no navegador até a sincronização opcional.
 - PAT e senha do banco ficam apenas em GitHub Secrets.
 - Escritas na nuvem passam pelo RPC versionado.
 - O RPC limita o workspace a 5 MB.
@@ -165,6 +218,8 @@ A publishable key pode ser utilizada no navegador. **Nunca coloque `service_role
 - O catálogo contém hipóteses, não produtos com retorno garantido.
 - A importação depende da qualidade e do período dos dados fornecidos.
 - Arquivos de períodos sobrepostos podem duplicar métricas quando a opção **Somar** for utilizada.
+- Adaptadores podem exigir ajuste quando a plataforma altera seus cabeçalhos.
+- A auditoria financeira não substitui contabilidade ou apuração fiscal.
 - Não há conexão OAuth direta com marketplaces nesta versão.
 - A mesclagem da nuvem ocorre por identificador; não é edição colaborativa em tempo real.
 - O score não constitui previsão financeira.
@@ -179,7 +234,7 @@ A `main` é publicada automaticamente pelo workflow do GitHub Pages.
 
 ## Roadmap
 
-- v0.4.1: adaptadores para formatos exportados por marketplaces.
+- v0.4.3: importação financeira ampliada e reconciliação por pedido.
 - v0.5: atualização assistida de tendências e catálogo.
 - v1.0: inteligência de mercado e recomendações assistidas.
 
