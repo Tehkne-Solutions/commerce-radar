@@ -1,4 +1,5 @@
 (()=>{'use strict';
+const HISTORY_TABLE='commerce_radar_workspace_versions';
 const byId=id=>document.getElementById(id);
 const escapeHtml=value=>String(value??'').replace(/[&<>\"]/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;'}[char]));
 let versions=[];
@@ -60,7 +61,8 @@ async function loadHistory(){
     const session=await cloud.validSession();
     if(!session)throw new Error('A sessão expirou. Entre novamente.');
     const value=cloud.config();
-    const query=`/rest/v1/${encodeURIComponent(value.versionsTable)}?user_id=eq.${encodeURIComponent(session.user.id)}&select=revision,payload,device_id,sync_reason,created_at&order=revision.desc&limit=30`;
+    const table=value.versionsTable||HISTORY_TABLE;
+    const query=`/rest/v1/${encodeURIComponent(table)}?user_id=eq.${encodeURIComponent(session.user.id)}&select=revision,payload,device_id,sync_reason,created_at&order=revision.desc&limit=30`;
     const rows=await cloud.request(query,{token:session.access_token});
     versions=Array.isArray(rows)?rows:[];
     renderHistory();
