@@ -48,6 +48,11 @@ function loadReviewOperations(){
   if(document.querySelector('script[src="./trend-operations.js"]'))return;
   let attempts=0;const timer=setInterval(()=>{attempts++;if(window.CommerceRadarReviewCalendar){clearInterval(timer);addScript('./trend-operations.js')}else if(attempts>300)clearInterval(timer)},50);
 }
-function boot(){loadReviewCalendar();loadReviewOperations();if(inject())return;let attempts=0;const timer=setInterval(()=>{attempts++;if(inject()||attempts>100)clearInterval(timer)},100)}
+function loadReviewSla(){
+  addStyle('./trend-sla.css');
+  if(document.querySelector('script[src="./trend-sla.js"]'))return;
+  let attempts=0;const timer=setInterval(()=>{attempts++;if(window.CommerceRadarReviewOperations){clearInterval(timer);addScript('./trend-sla.js')}else if(attempts>360)clearInterval(timer)},50);
+}
+function boot(){loadReviewCalendar();loadReviewOperations();loadReviewSla();if(inject())return;let attempts=0;const timer=setInterval(()=>{attempts++;if(inject()||attempts>100)clearInterval(timer)},100)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
