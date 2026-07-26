@@ -1,5 +1,37 @@
 # Changelog — Commerce Radar
 
+## 0.3.2 — Diagnóstico Administrativo
+
+### Adicionado
+
+- Painel de diagnóstico na tela **Conta e sincronização**.
+- Verificação de navegador, Fetch e LocalStorage.
+- Contagem dos dados locais disponíveis para sincronização.
+- Validação de Project URL, publishable key e tabela.
+- Teste do Supabase Auth.
+- Teste anônimo da Data API e do isolamento por RLS.
+- Validação da sessão autenticada e do workspace protegido.
+- Verificação do Service Worker e do modo offline.
+- Relatório copiável sem exposição de chaves, senhas ou tokens.
+- Links diretos para provisionamento e verificação externa.
+- Workflow `verify-production.yml` executado após o provisionamento ou manualmente.
+- Espera automática do deploy do GitHub Pages antes dos testes externos.
+- Verificação dos assets essenciais publicados.
+- Workflow independente para validar o módulo de diagnóstico.
+
+### Segurança
+
+- O diagnóstico não realiza escrita ou exclusão no Supabase.
+- Chaves e tokens nunca aparecem no relatório.
+- A consulta anônima precisa retornar uma lista vazia para ser aprovada.
+- A verificação externa usa apenas a configuração pública já destinada ao navegador.
+
+### Compatibilidade
+
+- O modo local continua funcionando sem Supabase.
+- Relatórios ficam somente no navegador.
+- Workspaces, backups e contas anteriores continuam válidos.
+
 ## 0.3.1 — Ativação Automatizada
 
 ### Adicionado

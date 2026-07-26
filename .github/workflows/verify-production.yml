@@ -1,0 +1,106 @@
+name: Verificar produção e nuvem
+
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows:
+      - Provisionar Supabase
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+concurrency:
+  group: commerce-radar-production-verification
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+
+      - name: Ler configuração pública
+        id: config
+        shell: bash
+        run: |
+          set -euo pipefail
+          python <<'PY' >> "$GITHUB_OUTPUT"
+          import re
+          text = open('cloud-config.js', encoding='utf-8').read()
+          url = re.search(r"url:\s*['\"]([^'\"]+)", text)
+          key = re.search(r"publishableKey:\s*['\"]([^'\"]+)", text)
+          table = re.search(r"table:\s*['\"]([^'\"]+)", text)
+          if not url or not key or not url.group(1) or not key.group(1):
+              raise SystemExit('A nuvem ainda não foi provisionada em cloud-config.js.')
+          print(f"project_url={url.group(1)}")
+          print(f"publishable_key={key.group(1)}")
+          print(f"table={table.group(1) if table else 'commerce_radar_workspaces'}")
+          PY
+
+      - name: Aguardar GitHub Pages publicar a configuração
+        shell: bash
+        env:
+          EXPECTED_URL: ${{ steps.config.outputs.project_url }}
+        run: |
+          set -euo pipefail
+          SITE='https://tehkne-solutions.github.io/commerce-radar'
+          READY=false
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent --show-error "$SITE/cloud-config.js?attempt=$attempt" -o /tmp/deployed-config.js; then
+              if grep -Fq "$EXPECTED_URL" /tmp/deployed-config.js; then
+                READY=true
+                break
+              fi
+            fi
+            echo "Aguardando deploy atualizado ($attempt/30)..."
+            sleep 10
+          done
+          [[ "$READY" == true ]] || { echo 'O GitHub Pages não publicou a configuração esperada.'; exit 1; }
+
+      - name: Testar Auth e isolamento anônimo
+        shell: bash
+        env:
+          PROJECT_URL: ${{ steps.config.outputs.project_url }}
+          PUBLISHABLE_KEY: ${{ steps.config.outputs.publishable_key }}
+          TABLE: ${{ steps.config.outputs.table }}
+        run: |
+          set -euo pipefail
+          echo "::add-mask::$PUBLISHABLE_KEY"
+          curl --fail --silent --show-error -H "apikey: $PUBLISHABLE_KEY" "$PROJECT_URL/auth/v1/health" >/dev/null
+          CODE=$(curl --silent --show-error -o /tmp/anonymous.json -w '%{http_code}' -H "apikey: $PUBLISHABLE_KEY" "$PROJECT_URL/rest/v1/$TABLE?select=user_id&limit=1")
+          [[ "$CODE" == '200' ]] || { cat /tmp/anonymous.json; exit 1; }
+          jq -e 'type == "array" and length == 0' /tmp/anonymous.json >/dev/null || { echo 'RLS não isolou a consulta anônima.'; cat /tmp/anonymous.json; exit 1; }
+
+      - name: Testar assets essenciais em produção
+        shell: bash
+        run: |
+          set -euo pipefail
+          SITE='https://tehkne-solutions.github.io/commerce-radar'
+          for asset in index.html data.js cloud.js cloud-bootstrap.js cloud-diagnostics.js manifest.webmanifest; do
+            curl --fail --silent --show-error "$SITE/$asset" -o "/tmp/$asset"
+          done
+          grep -Fq 'Commerce Radar' /tmp/index.html
+          grep -Fq 'DIAGNÓSTICO ADMINISTRATIVO' /tmp/cloud-diagnostics.js
+
+      - name: Resumo
+        shell: bash
+        env:
+          PROJECT_URL: ${{ steps.config.outputs.project_url }}
+        run: |
+          {
+            echo '## Produção verificada'
+            echo
+            echo '- GitHub Pages publicou a configuração atual.'
+            echo "- Supabase Auth respondeu em \`$PROJECT_URL\`."
+            echo '- A Data API está acessível.'
+            echo '- A consulta anônima retornou uma lista vazia protegida por RLS.'
+            echo '- Os assets do diagnóstico administrativo estão disponíveis.'
+            echo
+            echo '**Assinatura:** Tehkné Solutions'
+          } >> "$GITHUB_STEP_SUMMARY"

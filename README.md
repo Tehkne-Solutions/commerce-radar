@@ -8,8 +8,9 @@ Produto web para ajudar empreendedores a decidir:
 4. **Quando continuar:** funil de experimentos com métricas e aprendizados reais.
 5. **Como lançar:** metas, orçamento e checklist para hipóteses validadas.
 6. **Como preservar o trabalho:** backup local e sincronização opcional entre dispositivos.
+7. **Como verificar a infraestrutura:** diagnóstico administrativo no navegador e teste externo no GitHub Actions.
 
-## MVP 0.3.1
+## MVP 0.3.2
 
 - Radar com 20 oportunidades iniciais.
 - Cadastro, edição e exclusão de oportunidades próprias.
@@ -27,6 +28,9 @@ Produto web para ajudar empreendedores a decidir:
 - Workspace isolado por usuário com Row Level Security.
 - Provisionamento automatizado do Supabase por GitHub Actions.
 - Criação de conta e primeiro envio em uma ação guiada.
+- Diagnóstico de configuração, Auth, Data API, RLS, sessão, workspace e PWA.
+- Relatório copiável sem exposição de chaves ou tokens.
+- Verificação externa automática após o provisionamento.
 - PWA e funcionamento offline preservados.
 
 ## Stack
@@ -75,6 +79,24 @@ O workflow `.github/workflows/provision-supabase.yml`:
 6. aciona o deploy da `main`.
 
 Documentação completa: [`docs/AUTOMATED_ACTIVATION.md`](docs/AUTOMATED_ACTIVATION.md).
+
+## Diagnóstico administrativo
+
+Na tela **Conta e sincronização**, use **Executar diagnóstico** para verificar:
+
+- disponibilidade de Fetch e LocalStorage;
+- quantidade de dados locais;
+- Project URL, publishable key e tabela;
+- saúde do Supabase Auth;
+- acesso à Data API;
+- isolamento anônimo por RLS;
+- validade da sessão autenticada;
+- acesso ao workspace do usuário;
+- ativação do Service Worker.
+
+O relatório pode ser copiado para suporte e não inclui senha, publishable key, access token ou refresh token.
+
+O workflow `.github/workflows/verify-production.yml` também é executado depois de **Provisionar Supabase** e pode ser iniciado manualmente. Ele espera o GitHub Pages publicar a configuração, testa Auth, confirma que a consulta anônima retorna uma lista vazia e verifica os assets da aplicação.
 
 ## Primeira conta e primeiro envio
 
@@ -131,6 +153,7 @@ https://tehkne-solutions.github.io/commerce-radar/
 - Cada usuário acessa somente a própria linha pela política baseada em `auth.uid()`.
 - A senha do usuário é processada pelo Supabase Auth.
 - A sessão fica no navegador e é renovada com refresh token.
+- O diagnóstico não exibe nem copia credenciais.
 - A substituição integral dos dados exige confirmação.
 - Limpar os dados do navegador remove a sessão e os registros locais.
 
@@ -141,11 +164,12 @@ https://tehkne-solutions.github.io/commerce-radar/
 - As métricas dos testes são inseridas manualmente.
 - A sincronização usa um workspace JSON por usuário, não colaboração simultânea em tempo real.
 - A criação automática de projeto depende do limite e das permissões da organização Supabase.
+- O diagnóstico autenticado depende de uma sessão ativa no navegador.
 - O score e os planos não constituem previsão financeira.
 
 ## Roadmap
 
-- v0.3.2: diagnóstico administrativo de conexão, Auth, tabela e políticas.
+- v0.3.3: histórico de sincronizações, recuperação de conflito e auditoria de alterações.
 - v0.4: importação de CSV e integrações oficiais com marketplaces.
 - v0.5: fontes de dados e atualização assistida do catálogo.
 - v1.0: inteligência de mercado e recomendações assistidas.
