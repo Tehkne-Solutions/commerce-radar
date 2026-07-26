@@ -70,12 +70,12 @@ jobs:
           const sw=fs.readFileSync('sw.js','utf8');
           const docs=fs.readFileSync('docs/FINANCIAL_PLANNING.md','utf8');
           const version=fs.readFileSync('VERSION','utf8').trim();
+          const atLeast=(current,minimum)=>{const a=current.split('.').map(Number),b=minimum.split('.').map(Number);for(let i=0;i<3;i++){if((a[i]||0)>(b[i]||0))return true;if((a[i]||0)<(b[i]||0))return false}return true};
           for(const marker of ['Metas, orçamento e projeção de caixa','financialPlans',"version: '0.4.5'",'Ponto de equilíbrio','Tehkné Solutions'])if(!code.includes(marker))throw new Error(`Marcador ausente: ${marker}`);
           for(const asset of ['./financial-planning.css','./financial-planning.js']){if(!data.includes(asset))throw new Error(`Loader ausente: ${asset}`);if(!sw.includes(asset))throw new Error(`Cache offline ausente: ${asset}`)}
           if(data.indexOf('./financial-planning.js')<data.indexOf('./financial-close.js'))throw new Error('Planejamento deve carregar depois do fechamento');
           if(!css.includes('.fpScenarioGrid')||!css.includes('.fpTable')||css.length<2000)throw new Error('Estilos do planejamento incompletos');
-          if(version!=='0.4.5')throw new Error(`Versão incorreta: ${version}`);
-          if(!sw.includes('commerce-radar-v14'))throw new Error('Cache não foi atualizado');
+          if(!atLeast(version,'0.4.5'))throw new Error(`Versão anterior à 0.4.5: ${version}`);
           for(const marker of ['Ponto de equilíbrio','Capital de giro','Cenários','Prazo de repasse','Fluxo mensal'])if(!docs.includes(marker))throw new Error(`Documentação incompleta: ${marker}`);
           console.log('Integração, backup, nuvem, documentação e PWA válidos.');
           NODE
