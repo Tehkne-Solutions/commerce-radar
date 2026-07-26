@@ -1,0 +1,88 @@
+name: Validar fechamento financeiro
+
+on:
+  pull_request:
+    paths:
+      - 'financial-close.js'
+      - 'financial-close.css'
+      - 'data.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/PERIOD_CLOSE.md'
+      - '.github/workflows/validate-period-close.yml'
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate-period-close:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe
+        run: |
+          node --check financial-close.js
+          node --check data.js
+          node --check sw.js
+
+      - name: Testar fechamento, canais, tendência e repasses
+        run: |
+          node <<'NODE'
+          global.window = undefined;
+          global.document = undefined;
+          require('./financial-close.js');
+          const api = global.CommerceRadarPeriodClose;
+          if (!api) throw new Error('API de fechamento não inicializada');
+
+          const audits = [
+            {id:'a1',channel:'Mercado Livre',periodStart:'2026-06-01',periodEnd:'2026-06-30',quality:'real',orders:10,units:10,grossRevenue:1000,discounts:50,productCost:400,marketplaceFees:120,paymentFees:20,shippingCost:80,shippingSubsidy:20,taxes:60,advertising:100,packaging:30,otherCosts:10},
+            {id:'a2',channel:'Shopee',periodStart:'2026-06-01',periodEnd:'2026-06-30',quality:'partial',orders:5,units:5,grossRevenue:500,refunds:50,productCost:200,marketplaceFees:60,paymentFees:10,shippingCost:40,taxes:30,advertising:30,packaging:15,otherCosts:5},
+            {id:'a3',channel:'Mercado Livre',periodStart:'2026-07-01',periodEnd:'2026-07-31',quality:'real',orders:4,units:4,grossRevenue:400,productCost:160,marketplaceFees:48,paymentFees:8,shippingCost:32,taxes:24,advertising:40,packaging:12,otherCosts:4}
+          ];
+          const payouts = [
+            {id:'p1',channel:'Mercado Livre',periodStart:'2026-06-01',periodEnd:'2026-06-30',expectedAmount:700,reportedAmount:680,receivedAmount:500,dueDate:'2026-07-05'},
+            {id:'p2',channel:'Shopee',periodStart:'2026-06-01',periodEnd:'2026-06-30',expectedAmount:300,reportedAmount:300,receivedAmount:300,dueDate:'2026-07-05'}
+          ];
+          const near=(actual,expected,tolerance=.001)=>{if(Math.abs(actual-expected)>tolerance)throw new Error(`Esperado ${expected}, recebido ${actual}`)};
+          const june=api.summarizePeriod(audits,payouts,'2026-06-01','2026-06-30','all');
+          near(june.netSales,1400); near(june.totalCosts,1190); near(june.netProfit,210); near(june.netMargin,15); near(june.pendingPayout,180); near(june.payoutVariance,-20); near(june.dataConfidence,50);
+          if(june.overduePayouts!==1)throw new Error('Repasse atrasado não detectado');
+          const channels=api.groupByChannel(audits,payouts,'2026-06-01','2026-06-30');
+          if(channels.length!==2)throw new Error('Comparação de canais inválida');
+          near(channels.find(item=>item.channel==='Mercado Livre').netProfit,150);
+          near(channels.find(item=>item.channel==='Shopee').netProfit,60);
+          const trend=api.monthlyTrend(audits,'2026-06-01','2026-07-31','all');
+          if(trend.length!==2||trend[0].month!=='2026-06'||trend[1].month!=='2026-07')throw new Error('Tendência mensal inválida');
+          near(trend[0].netMargin,15); near(trend[1].netMargin,18);
+          const batch={id:'batch-1',filename:'repasse.csv',channel:'Mercado Livre',orders:[{date:'2026-06-01',expectedPayout:100,reportedPayout:90},{date:'2026-06-02',expectedPayout:200,reportedPayout:180}]};
+          const summary=api.batchSummary(batch);
+          near(summary.expectedAmount,300); near(summary.reportedAmount,270); near(summary.variance,-30);
+          const candidates=api.payoutCandidates([batch],[]);
+          if(candidates.length!==1||candidates[0].sourceId!=='reconciliation:batch-1')throw new Error('Candidato de repasse inválido');
+          if(api.payoutCandidates([batch],candidates).length!==0)throw new Error('Lote duplicado não foi bloqueado');
+          console.log('Fechamento, canais, tendência e repasses válidos.');
+          NODE
+
+      - name: Validar integração, backup, nuvem e PWA
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const code=fs.readFileSync('financial-close.js','utf8');
+          const css=fs.readFileSync('financial-close.css','utf8');
+          const data=fs.readFileSync('data.js','utf8');
+          const sw=fs.readFileSync('sw.js','utf8');
+          const docs=fs.readFileSync('docs/PERIOD_CLOSE.md','utf8');
+          const version=fs.readFileSync('VERSION','utf8').trim();
+          for(const marker of ['Fechamento financeiro','payoutControls','periodClosings',"version: '0.4.4'",'Tehkné Solutions'])if(!code.includes(marker))throw new Error(`Marcador ausente: ${marker}`);
+          for(const asset of ['./financial-close.css','./financial-close.js']){if(!data.includes(asset))throw new Error(`Loader ausente: ${asset}`);if(!sw.includes(asset))throw new Error(`Cache offline ausente: ${asset}`)}
+          if(data.indexOf('./financial-close.js')<data.indexOf('./financial-reconciliation.js'))throw new Error('Fechamento deve carregar depois da reconciliação');
+          if(!css.includes('.closeSummary')||!css.includes('.payoutCard')||css.length<2500)throw new Error('Estilos de fechamento incompletos');
+          if(version!=='0.4.4')throw new Error(`Versão incorreta: ${version}`);
+          for(const marker of ['Comparação entre canais','Evolução da margem','Controle de repasses','Fechamentos salvos'])if(!docs.includes(marker))throw new Error(`Documentação incompleta: ${marker}`);
+          console.log('Integração, backup, nuvem, documentação e PWA válidos.');
+          NODE

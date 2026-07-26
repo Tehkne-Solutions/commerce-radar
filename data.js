@@ -38,6 +38,7 @@ if(typeof document!=='undefined'){
     addStyle('./marketplace-adapters.css');
     addStyle('./financial-audit.css');
     addStyle('./financial-reconciliation.css');
-    addScript('./cloud-config.js',()=>addScript('./cloud.js',()=>addScript('./cloud-bootstrap.js',()=>addScript('./cloud-diagnostics.js',()=>addScript('./cloud-history.js',()=>addScript('./marketplace-adapters.js',()=>addScript('./import.js',()=>addScript('./financial-audit.js',()=>addScript('./financial-reconciliation.js')))))))));
+    addStyle('./financial-close.css');
+    addScript('./cloud-config.js',()=>addScript('./cloud.js',()=>addScript('./cloud-bootstrap.js',()=>addScript('./cloud-diagnostics.js',()=>addScript('./cloud-history.js',()=>addScript('./marketplace-adapters.js',()=>addScript('./import.js',()=>addScript('./financial-audit.js',()=>addScript('./financial-reconciliation.js',()=>addScript('./financial-close.js'))))))))));
   },{once:true});
 }
