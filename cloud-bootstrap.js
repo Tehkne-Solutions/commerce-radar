@@ -59,6 +59,20 @@ function waitForSync(previous){
     }
   },500);
 }
-function boot(){if(inject())return;let attempts=0;const timer=setInterval(()=>{attempts++;if(inject()||attempts>100)clearInterval(timer)},100)}
+function loadReviewCalendar(){
+  if(!document.querySelector('link[href="./trend-calendar.css"]')){
+    const link=document.createElement('link');link.rel='stylesheet';link.href='./trend-calendar.css';document.head.append(link);
+  }
+  if(document.querySelector('script[src="./trend-calendar.js"]'))return;
+  let attempts=0;
+  const timer=setInterval(()=>{
+    attempts++;
+    if(window.CommerceRadarTrendQueue){
+      clearInterval(timer);
+      const script=document.createElement('script');script.src='./trend-calendar.js';document.body.append(script);
+    }else if(attempts>240)clearInterval(timer);
+  },50);
+}
+function boot(){loadReviewCalendar();if(inject())return;let attempts=0;const timer=setInterval(()=>{attempts++;if(inject()||attempts>100)clearInterval(timer)},100)}
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',boot,{once:true});else boot();
 })();
