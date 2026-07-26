@@ -1,5 +1,5 @@
-const CACHE = 'commerce-radar-v4';
-const ASSETS = ['./', './index.html', './styles.css', './v021.css', './data.js', './app.js', './v021.js', './manifest.webmanifest'];
+const CACHE = 'commerce-radar-v5';
+const ASSETS = ['./', './index.html', './styles.css', './v021.css', './cloud.css', './data.js', './app.js', './v021.js', './cloud-config.js', './cloud.js', './manifest.webmanifest'];
 
 self.addEventListener('install', event => {
   self.skipWaiting();
