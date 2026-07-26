@@ -1,0 +1,101 @@
+name: Validar fila de atualização de fontes
+
+on:
+  pull_request:
+    paths:
+      - 'trend-queue.js'
+      - 'trend-queue.css'
+      - 'trend-radar.js'
+      - 'data.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/SOURCE_UPDATE_QUEUE.md'
+      - '.github/workflows/validate-trend-queue.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-trend-queue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe
+        run: |
+          node --check trend-radar.js
+          node --check trend-queue.js
+          node --check data.js
+          node --check sw.js
+
+      - name: Testar prioridade, vencimento, lote e histórico
+        run: |
+          node <<'NODE'
+          const store=new Map();
+          global.window=undefined;
+          global.document=undefined;
+          global.localStorage={
+            getItem:key=>store.has(key)?store.get(key):null,
+            setItem:(key,value)=>store.set(key,String(value))
+          };
+          require('./trend-radar.js');
+          require('./trend-queue.js');
+          const trends=global.CommerceRadarTrends;
+          const queue=global.CommerceRadarTrendQueue;
+          if(!trends||!queue)throw new Error('APIs de tendências e fila não inicializadas');
+          const rows=[
+            {id:'expired',topic:'Produto vencido',sourceType:'search',sourceName:'Busca',observedAt:'2026-06-01',validDays:10,growth:4,demand:4,competition:3,margin:3,risk:2,confidence:3,evidence:'Evidência antiga'},
+            {id:'soon',topic:'Produto próximo',sourceType:'marketplace',sourceName:'Canal',observedAt:'2026-07-20',validDays:10,growth:4,demand:4,competition:3,margin:4,risk:2,confidence:4,evidence:'Evidência recente'},
+            {id:'current',topic:'Produto em dia',sourceType:'internal',sourceName:'Interno',observedAt:'2026-07-25',validDays:60,growth:3,demand:3,competition:3,margin:3,risk:3,confidence:5,evidence:'Dado interno'}
+          ];
+          const metas=[
+            {signalId:'expired',priority:'low'},
+            {signalId:'soon',priority:'high'},
+            {signalId:'current',priority:'medium'}
+          ];
+          const built=queue.buildQueue(rows,metas,'2026-07-26');
+          if(built.length!==3)throw new Error('Fila não contém todos os sinais');
+          const expired=built.find(item=>item.signal.id==='expired');
+          const soon=built.find(item=>item.signal.id==='soon');
+          const current=built.find(item=>item.signal.id==='current');
+          if(expired.due.id!=='expired')throw new Error(`Vencimento não detectado: ${expired.due.id}`);
+          if(soon.due.id!=='soon')throw new Error(`Prazo de 4 dias deveria ser soon: ${soon.due.id}`);
+          if(current.due.id!=='current')throw new Error(`Fonte válida deveria estar em dia: ${current.due.id}`);
+          if(!(expired.queueScore>current.queueScore&&soon.queueScore>current.queueScore))throw new Error('Ordenação de urgência inválida');
+          const changes=queue.diffSignal({demand:2,evidence:'A'},{demand:4,evidence:'B'});
+          if(changes.length!==2)throw new Error('Diff do histórico inválido');
+          store.set('tehkne-commerce-radar-v5-trend-signals',JSON.stringify(rows));
+          const reviewed=queue.batchReview(['soon'],{refreshObservation:true,validDays:30,priority:'high',state:'reviewed',reviewedAt:'2026-07-26',note:'Revisão de teste'});
+          if(reviewed.length!==1)throw new Error('Revisão em lote não processada');
+          const saved=JSON.parse(store.get('tehkne-commerce-radar-v5-trend-signals'));
+          const updated=saved.find(item=>item.id==='soon');
+          if(updated.observedAt!=='2026-07-26'||updated.validDays!==30)throw new Error('Sinal não foi renovado no lote');
+          const history=JSON.parse(store.get('tehkne-commerce-radar-v51-signal-history'));
+          if(!history.length||history[0].signalId!=='soon')throw new Error('Histórico não registrado');
+          const savedMeta=JSON.parse(store.get('tehkne-commerce-radar-v51-review-queue'));
+          if(savedMeta[0].state!=='reviewed'||savedMeta[0].priority!=='high')throw new Error('Metadados da fila inválidos');
+          console.log('Prioridade, vencimento, lote e histórico válidos.');
+          NODE
+
+      - name: Validar integração, backup, nuvem e PWA
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const code=fs.readFileSync('trend-queue.js','utf8');
+          const css=fs.readFileSync('trend-queue.css','utf8');
+          const data=fs.readFileSync('data.js','utf8');
+          const sw=fs.readFileSync('sw.js','utf8');
+          const docs=fs.readFileSync('docs/SOURCE_UPDATE_QUEUE.md','utf8');
+          const version=fs.readFileSync('VERSION','utf8').trim();
+          for(const marker of ['Fila de atualização de fontes','trendReviewQueue','trendSignalHistory',"version: '0.5.1'",'Trilha de auditoria','Tehkné Solutions'])if(!code.includes(marker))throw new Error(`Marcador ausente: ${marker}`);
+          for(const asset of ['./trend-queue.css','./trend-queue.js']){if(!data.includes(asset))throw new Error(`Loader ausente: ${asset}`);if(!sw.includes(asset))throw new Error(`Cache offline ausente: ${asset}`)}
+          if(data.indexOf('./trend-queue.js')<data.indexOf('./trend-radar.js'))throw new Error('Fila deve carregar depois do Radar de tendências');
+          if(!css.includes('.tqSummary')||!css.includes('.tqHistoryEntry')||css.length<1800)throw new Error('Estilos da fila incompletos');
+          if(version!=='0.5.1')throw new Error(`Versão incorreta: ${version}`);
+          if(!sw.includes('commerce-radar-v16'))throw new Error('Cache PWA não foi atualizado');
+          for(const marker of ['Prioridade da fila','Revisão em lote','Histórico por sinal','Vencimentos próximos','Backup e sincronização'])if(!docs.includes(marker))throw new Error(`Documentação incompleta: ${marker}`);
+          console.log('Integração, backup, nuvem, documentação e PWA válidos.');
+          NODE
