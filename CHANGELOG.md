@@ -1,5 +1,39 @@
 # Changelog — Commerce Radar
 
+## 0.4.3 — Reconciliação por Pedido
+
+### Adicionado
+
+- Área de reconciliação financeira por pedido.
+- Detecção de relatórios de Mercado Livre, Shopee, Shopify, WooCommerce e CSV genérico.
+- Agrupamento de várias linhas pelo identificador do pedido.
+- Deduplicação de frete, descontos, reembolsos, impostos e repasses repetidos.
+- Soma de tarifas e comissões realmente cobradas por item em Mercado Livre e Shopee.
+- Rateio proporcional dos custos do pedido pela receita de cada produto.
+- Uso da quantidade como peso quando não existe receita por item.
+- Cálculo de repasse esperado e diferença para o repasse informado.
+- Exportação CSV dos pedidos reconciliados.
+- Histórico local dos 50 lotes mais recentes.
+- Criação de auditorias financeiras por produto e canal.
+- Inclusão dos lotes de reconciliação no backup e no workspace sincronizado.
+- Documentação em `docs/ORDER_RECONCILIATION.md`.
+- Workflow específico com cenários multi-item e taxas repetidas.
+
+### Privacidade e segurança
+
+- Processamento integral no navegador.
+- CSV bruto não armazenado no histórico.
+- Nenhuma credencial de marketplace solicitada.
+- Valores calculados permanecem revisáveis antes da criação das auditorias.
+- A ferramenta não substitui conciliação contábil, fiscal ou bancária.
+
+### Compatibilidade
+
+- Não exige nova migration do Supabase.
+- Backups antigos continuam válidos.
+- Auditoria financeira, importação, histórico e conflitos permanecem disponíveis.
+- O PWA inclui os novos assets no cache offline.
+
 ## 0.4.2 — Margem Líquida e Auditoria Financeira
 
 ### Adicionado

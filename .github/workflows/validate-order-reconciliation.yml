@@ -1,0 +1,105 @@
+name: Validar reconciliação por pedido
+
+on:
+  pull_request:
+    paths:
+      - 'financial-reconciliation.js'
+      - 'financial-reconciliation.css'
+      - 'data.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/ORDER_RECONCILIATION.md'
+      - '.github/workflows/validate-order-reconciliation.yml'
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate-order-reconciliation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe
+        run: |
+          node --check financial-reconciliation.js
+          node --check data.js
+          node --check sw.js
+
+      - name: Testar consolidação e rateio
+        run: |
+          node <<'NODE'
+          global.window = undefined;
+          global.document = undefined;
+          require('./financial-reconciliation.js');
+          const api = global.CommerceRadarReconciliation;
+          if (!api) throw new Error('API de reconciliação não inicializada');
+
+          if (api.smartSum([10, 10]) !== 10) throw new Error('Valor repetido deveria ser contado uma vez');
+          if (api.smartSum([5, 7]) !== 12) throw new Error('Valores diferentes deveriam ser somados');
+          if (api.parseNumber('R$ 1.234,56') !== 1234.56) throw new Error('Moeda pt-BR inválida');
+
+          const shopify = `Name,Financial Status,Lineitem quantity,Lineitem name,Lineitem price,Lineitem sku,Shipping,Discount Amount,Taxes,Net Payout,Cost
+#1001,paid,1,Produto A,60,A,10,5,3,82,20
+,paid,1,Produto B,40,B,10,5,3,82,10`;
+          const shopifyResult = api.analyzeText(shopify, 'orders-shopify.csv');
+          if (!shopifyResult.matched || shopifyResult.preset.id !== 'shopify') throw new Error('Shopify não detectado');
+          if (shopifyResult.orders.length !== 1) throw new Error('Pedido Shopify deveria ser consolidado');
+          const order = shopifyResult.orders[0];
+          if (order.grossRevenue !== 100 || order.shippingCost !== 10 || order.discounts !== 5 || order.taxes !== 3) throw new Error('Totais repetidos do Shopify foram duplicados');
+          if (order.expectedPayout !== 82 || order.payoutVariance !== 0) throw new Error(`Repasse Shopify incorreto: ${order.expectedPayout}/${order.payoutVariance}`);
+          const productA = shopifyResult.products.find(item => item.sku === 'A');
+          const productB = shopifyResult.products.find(item => item.sku === 'B');
+          if (!productA || !productB) throw new Error('Produtos Shopify ausentes');
+          if (Math.abs(productA.shippingCost - 6) > 0.001 || Math.abs(productB.shippingCost - 4) > 0.001) throw new Error('Rateio proporcional de frete falhou');
+          if (Math.abs(productA.discounts - 3) > 0.001 || Math.abs(productB.discounts - 2) > 0.001) throw new Error('Rateio proporcional de desconto falhou');
+
+          const shopee = `No. do pedido;Status do pedido;Nome do produto;Número de referência SKU;Quantidade;Preço acordado;Subtotal do produto;Taxa de comissão;Taxa de transação;Taxa de envio;Seller income
+S-10;Concluído;Produto A;A;1;50,00;50,00;5,00;1,00;8,00;80,00
+S-10;Concluído;Produto B;B;1;50,00;50,00;5,00;1,00;8,00;80,00`;
+          const shopeeResult = api.analyzeText(shopee, 'pedidos-shopee.csv');
+          if (shopeeResult.preset.id !== 'shopee') throw new Error('Shopee não detectado');
+          const shopeeOrder = shopeeResult.orders[0];
+          if (shopeeOrder.marketplaceFees !== 10) throw new Error(`Comissões por item não somadas: ${shopeeOrder.marketplaceFees}`);
+          if (shopeeOrder.paymentFees !== 2) throw new Error(`Taxas de transação por item não somadas: ${shopeeOrder.paymentFees}`);
+          if (shopeeOrder.shippingCost !== 8) throw new Error('Frete repetido da Shopee foi duplicado');
+          if (shopeeOrder.expectedPayout !== 80 || shopeeOrder.payoutVariance !== 0) throw new Error('Repasse Shopee incorreto');
+
+          const canceled = `Order ID,Order Status,Product,Quantity,Unit Price
+1,cancelled,Produto,1,100`;
+          const canceledResult = api.analyzeText(canceled, 'orders.csv', 'generic');
+          if (canceledResult.orders.length !== 0) throw new Error('Pedido cancelado não foi ignorado');
+
+          console.log('Deduplicação, taxas por item, rateio e repasses válidos.');
+          NODE
+
+      - name: Validar integração, backup, nuvem e PWA
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const code = fs.readFileSync('financial-reconciliation.js', 'utf8');
+          const css = fs.readFileSync('financial-reconciliation.css', 'utf8');
+          const data = fs.readFileSync('data.js', 'utf8');
+          const sw = fs.readFileSync('sw.js', 'utf8');
+          const version = fs.readFileSync('VERSION', 'utf8').trim();
+          const docs = fs.readFileSync('docs/ORDER_RECONCILIATION.md', 'utf8');
+
+          for (const marker of ['Reconciliação por pedido','Repasse esperado','reconciliationBatches','version:\'0.4.3\'','Tehkné Solutions']) {
+            if (!code.includes(marker)) throw new Error(`Marcador ausente: ${marker}`);
+          }
+          for (const asset of ['./financial-reconciliation.css', './financial-reconciliation.js']) {
+            if (!data.includes(asset)) throw new Error(`Loader ausente: ${asset}`);
+            if (!sw.includes(asset)) throw new Error(`Cache offline ausente: ${asset}`);
+          }
+          if (data.indexOf('./financial-reconciliation.js') < data.indexOf('./financial-audit.js')) throw new Error('Reconciliação deve carregar após auditoria financeira');
+          if (!css.includes('.reconciliationGrid') || !css.includes('.reconciliationBatch')) throw new Error('Estilos de reconciliação ausentes');
+          if (version !== '0.4.3') throw new Error(`Versão incorreta: ${version}`);
+          for (const marker of ['Valores repetidos no pedido','Rateio entre produtos','Diferença de repasse']) {
+            if (!docs.includes(marker)) throw new Error(`Documentação incompleta: ${marker}`);
+          }
+          console.log('Integração, backup, nuvem, documentação e PWA válidos.');
+          NODE

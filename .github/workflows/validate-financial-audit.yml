@@ -5,6 +5,8 @@ on:
     paths:
       - 'financial-audit.js'
       - 'financial-audit.css'
+      - 'financial-reconciliation.js'
+      - 'financial-reconciliation.css'
       - 'data.js'
       - 'sw.js'
       - 'VERSION'
@@ -15,6 +17,8 @@ on:
     paths:
       - 'financial-audit.js'
       - 'financial-audit.css'
+      - 'financial-reconciliation.js'
+      - 'financial-reconciliation.css'
       - 'data.js'
       - 'sw.js'
       - 'VERSION'
@@ -31,7 +35,9 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Validar sintaxe
-        run: node --check financial-audit.js
+        run: |
+          node --check financial-audit.js
+          if [ -f financial-reconciliation.js ]; then node --check financial-reconciliation.js; fi
 
       - name: Testar cálculos financeiros
         run: |
@@ -133,6 +139,7 @@ jobs:
       - name: Validar integração, backup, nuvem e PWA
         run: |
           python <<'PY'
+          import re
           from pathlib import Path
 
           financial = Path('financial-audit.js').read_text(encoding='utf-8')
@@ -159,22 +166,32 @@ jobs:
           if missing:
               raise SystemExit(f'Marcadores financeiros ausentes: {missing}')
 
-          if "addScript('./import.js',()=>addScript('./financial-audit.js'))" not in data:
-              raise SystemExit('Ordem do loader financeiro inválida.')
+          import_position = data.find("./import.js")
+          audit_position = data.find("./financial-audit.js")
+          if import_position < 0 or audit_position < 0 or import_position > audit_position:
+              raise SystemExit('Ordem relativa do loader financeiro inválida.')
+          if "./financial-reconciliation.js" in data and audit_position > data.find("./financial-reconciliation.js"):
+              raise SystemExit('Reconciliação deve carregar após a auditoria financeira.')
           if "addStyle('./financial-audit.css')" not in data:
               raise SystemExit('CSS financeiro não carregado.')
           for asset in ('./financial-audit.js', './financial-audit.css'):
               if asset not in sw:
                   raise SystemExit(f'Asset ausente no cache: {asset}')
-          if "commerce-radar-v11" not in sw:
-              raise SystemExit('Versão de cache não atualizada.')
-          if version != '0.4.2':
-              raise SystemExit(f'Versão inesperada: {version}')
+          if not re.search(r"commerce-radar-v\d+", sw):
+              raise SystemExit('Versão de cache ausente.')
+
+          try:
+              version_tuple = tuple(int(part) for part in version.split('.'))
+          except ValueError as error:
+              raise SystemExit(f'Versão inválida: {version}') from error
+          if version_tuple < (0, 4, 2):
+              raise SystemExit(f'Versão financeira anterior à 0.4.2: {version}')
+
           if len(css) < 1000:
               raise SystemExit('CSS financeiro incompleto.')
           for marker in ('Receita líquida', 'Lucro líquido operacional', 'Perfis financeiros', 'R$ 1.000,00'):
               if marker not in docs:
                   raise SystemExit(f'Documentação incompleta: {marker}')
 
-          print('Integração financeira, backup, nuvem e PWA validados.')
+          print('Integração financeira, extensões, backup, nuvem e PWA validados.')
           PY

@@ -2,23 +2,21 @@
 
 Produto web para ajudar empreendedores a decidir **o que vender, onde vender, como validar e se a operação realmente gera lucro**.
 
-## MVP 0.4.2
+## MVP 0.4.3
 
 - Radar com 20 oportunidades iniciais.
 - Cadastro de oportunidades próprias.
 - Score, margem, preço mínimo e ranking de canais.
 - Kanban de experimentos com métricas reais.
 - Planos de lançamento para hipóteses validadas.
-- Backup e restauração em JSON.
-- Conta opcional e sincronização entre dispositivos.
-- Histórico de revisões e resolução de conflitos.
-- Provisionamento automatizado do Supabase.
-- Diagnóstico administrativo de Auth, Data API, RLS e PWA.
 - Importação de CSV, TXT e TSV.
 - Adaptadores para Mercado Livre, Shopee, WooCommerce e Shopify.
 - Auditoria de margem líquida por produto e canal.
-- Perfis financeiros, reconciliação e alertas de custo.
-- Exportação financeira em CSV e Markdown.
+- Reconciliação por pedido, taxas e repasses.
+- Perfis financeiros, alertas e comparação de custos.
+- Backup, restauração e sincronização opcional.
+- Histórico de revisões e resolução de conflitos.
+- Provisionamento automatizado do Supabase.
 - PWA e modo local preservados.
 
 ## Stack
@@ -56,17 +54,9 @@ O sistema reconhece:
 - valores como `R$ 1.234,56` e `90,00`;
 - cabeçalhos em português ou inglês.
 
-O fluxo é:
-
-1. selecionar ou arrastar o arquivo;
-2. informar a origem;
-3. revisar o mapeamento das colunas;
-4. analisar qualidade, totais e produtos;
-5. salvar somente o diagnóstico ou aplicar os dados.
-
 ### Adaptadores
 
-A versão 0.4.1 adicionou presets para:
+Existem presets para:
 
 - Mercado Livre — vendas;
 - Shopee — pedidos;
@@ -75,7 +65,7 @@ A versão 0.4.1 adicionou presets para:
 - Shopify — produtos;
 - Shopify — pedidos.
 
-A detecção é revisável. Arquivos genéricos continuam usando o mapeamento da v0.4.
+A detecção é revisável. Arquivos genéricos continuam usando o mapeamento padrão.
 
 Guias:
 
@@ -107,22 +97,48 @@ Saídas:
 - CPA;
 - ROAS;
 - ROAS de equilíbrio;
-- participação de cada custo na receita;
+- participação dos custos na receita;
 - alertas e reconciliação contra o perfil planejado.
 
-O sistema não presume tarifas fixas de marketplace. Perfis financeiros são criados pelo usuário e permanecem editáveis em cada auditoria.
-
-Uma auditoria pode começar a partir de:
-
-- um teste real;
-- um produto do histórico de importação;
-- preenchimento manual.
+O sistema não presume tarifas fixas de marketplace. Perfis financeiros são criados pelo usuário e permanecem editáveis.
 
 Guia: [`docs/FINANCIAL_AUDIT.md`](docs/FINANCIAL_AUDIT.md).
 
+## Reconciliação por pedido
+
+A tela **Reconciliação por pedido** lê relatórios financeiros com várias linhas para o mesmo pedido.
+
+O motor:
+
+1. agrupa itens pelo identificador do pedido;
+2. soma receita e taxas realmente cobradas por item;
+3. conta uma única vez valores repetidos de frete, desconto, imposto e repasse;
+4. ignora pedidos cancelados ou totalmente reembolsados;
+5. calcula o repasse esperado;
+6. compara o repasse informado;
+7. rateia custos do pedido pela participação de cada produto na receita;
+8. cria auditorias financeiras por produto e canal.
+
+```text
+repasse esperado =
+  receita bruta
+  - descontos
+  - reembolsos
+  - taxas do canal
+  - taxas de pagamento
+  - frete
+  + subsídio de frete
+  - impostos
+  - outros ajustes
+```
+
+A diferença entre o repasse informado e o esperado é mantida no histórico do lote.
+
+Guia: [`docs/ORDER_RECONCILIATION.md`](docs/ORDER_RECONCILIATION.md).
+
 ## Backup
 
-O backup da v0.4.2 contém:
+O backup da v0.4.3 contém:
 
 ```text
 analyses
@@ -132,9 +148,10 @@ launchPlans
 importBatches
 financialAudits
 financialProfiles
+reconciliationBatches
 ```
 
-Backups antigos continuam compatíveis. Campos que não existirem são tratados como listas vazias.
+Backups antigos continuam compatíveis. Campos ausentes são tratados como listas vazias.
 
 ## Ativação automatizada da nuvem
 
@@ -149,80 +166,47 @@ Depois execute:
 Actions → Provisionar Supabase → Run workflow
 ```
 
-O workflow:
-
-1. usa um projeto existente ou cria um novo;
-2. aguarda os serviços ficarem saudáveis;
-3. aplica todas as migrations;
-4. cria workspace, histórico, RPC e políticas RLS;
-5. obtém a chave pública;
-6. gera `cloud-config.js`;
-7. verifica Auth, Data API e isolamento anônimo;
-8. publica a configuração na `main`;
-9. aciona o GitHub Pages.
+O workflow cria ou conecta o projeto, aplica migrations, configura RLS, publica `cloud-config.js` e aciona o GitHub Pages.
 
 Guia: [`docs/AUTOMATED_ACTIVATION.md`](docs/AUTOMATED_ACTIVATION.md).
 
 ## Sincronização com revisões
 
-Cada dispositivo conserva o número da última revisão recebida ou publicada.
+Cada dispositivo conserva o número da última revisão recebida ou publicada. O banco bloqueia sobrescritas quando outro dispositivo publica primeiro.
 
-O banco bloqueia a operação quando a revisão esperada não corresponde à revisão atual. Isso impede sobrescrita silenciosa entre dispositivos.
+O workspace sincroniza:
 
-Quando ocorre conflito, o usuário pode:
-
-- usar a versão da nuvem;
-- mesclar e criar uma revisão;
-- manter o dispositivo e publicar uma nova revisão.
-
-A sincronização automática fica suspensa enquanto houver conflito pendente.
-
-A v0.4.2 amplia dinamicamente o workspace para sincronizar também:
-
+- análises;
+- testes;
+- oportunidades próprias;
+- planos de lançamento;
 - lotes de importação;
 - auditorias financeiras;
-- perfis financeiros.
+- perfis financeiros;
+- lotes de reconciliação.
 
-Não é necessária nova migration para esses campos, pois o workspace é armazenado como JSON versionado.
-
-## Configuração manual alternativa
-
-Execute [`docs/supabase.sql`](docs/supabase.sql) no SQL Editor e configure:
-
-```js
-window.COMMERCE_RADAR_CLOUD = {
-  url: 'https://SEU-PROJETO.supabase.co',
-  publishableKey: 'SUA_CHAVE_PUBLICA',
-  table: 'commerce_radar_workspaces',
-  versionsTable: 'commerce_radar_workspace_versions'
-};
-```
-
-A publishable key pode ser utilizada no navegador. **Nunca coloque `service_role`, PAT ou senha do banco no frontend.**
+Não é necessária uma nova migration para esses campos, pois o workspace é armazenado como JSON versionado.
 
 ## Segurança e privacidade
 
 - O modo local não transmite dados.
-- Arquivos importados são processados no navegador.
-- O CSV bruto não é armazenado no histórico.
-- Auditorias e perfis ficam no navegador até a sincronização opcional.
+- Arquivos são processados no navegador.
+- CSVs brutos não são armazenados no histórico.
+- O histórico de reconciliação guarda apenas resumos.
 - PAT e senha do banco ficam apenas em GitHub Secrets.
 - Escritas na nuvem passam pelo RPC versionado.
-- O RPC limita o workspace a 5 MB.
 - Cada usuário acessa somente os próprios registros por RLS.
-- Consultas anônimas não recebem dados.
 - Backups não incluem credenciais.
 
 ## Limitações atuais
 
 - O catálogo contém hipóteses, não produtos com retorno garantido.
-- A importação depende da qualidade e do período dos dados fornecidos.
-- Arquivos de períodos sobrepostos podem duplicar métricas quando a opção **Somar** for utilizada.
-- Adaptadores podem exigir ajuste quando a plataforma altera seus cabeçalhos.
-- A auditoria financeira não substitui contabilidade ou apuração fiscal.
+- A importação depende da qualidade e do período dos dados.
+- Cabeçalhos dos marketplaces podem mudar.
+- Relatórios de repasse podem misturar ajustes de períodos diferentes.
+- A deduplicação automática deve ser revisada quando cobranças iguais forem legítimas em várias linhas.
+- A auditoria não substitui contabilidade, apuração fiscal ou conciliação bancária.
 - Não há conexão OAuth direta com marketplaces nesta versão.
-- A mesclagem da nuvem ocorre por identificador; não é edição colaborativa em tempo real.
-- O score não constitui previsão financeira.
 
 ## Publicação
 
@@ -234,7 +218,7 @@ A `main` é publicada automaticamente pelo workflow do GitHub Pages.
 
 ## Roadmap
 
-- v0.4.3: importação financeira ampliada e reconciliação por pedido.
+- v0.4.4: fechamento financeiro por período e painel de divergências.
 - v0.5: atualização assistida de tendências e catálogo.
 - v1.0: inteligência de mercado e recomendações assistidas.
 
