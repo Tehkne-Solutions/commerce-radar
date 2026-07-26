@@ -1,5 +1,34 @@
 # Changelog — Commerce Radar
 
+## 0.3.0 — Conta e Sincronização
+
+### Adicionado
+
+- Configuração opcional de projeto Supabase por arquivo ou pelo navegador.
+- Cadastro e login com e-mail e senha.
+- Persistência e renovação de sessão.
+- Envio do workspace local para a nuvem.
+- Download com substituição protegida por confirmação.
+- Mesclagem de análises, testes, oportunidades próprias e planos pelo identificador.
+- Sincronização automática opcional após alterações locais.
+- Indicadores de conta, última sincronização, estado e quantidade de itens locais.
+- Migration SQL para a tabela `commerce_radar_workspaces`.
+- Políticas RLS de leitura, criação, alteração e exclusão por usuário.
+
+### Alterado
+
+- Identificação da interface atualizada para MVP 0.3.
+- Cache offline ampliado para o módulo de nuvem.
+- Documentação de privacidade, segurança e configuração do Supabase.
+- Modo local mantido como comportamento padrão.
+
+### Segurança e compatibilidade
+
+- Nenhuma service-role é utilizada no frontend.
+- A configuração contém somente URL e chave pública.
+- Dados das versões 0.1, 0.2 e 0.2.1 continuam válidos.
+- A nuvem é opcional e não bloqueia o funcionamento offline.
+
 ## 0.2.1 — Operação e Lançamento
 
 ### Adicionado
