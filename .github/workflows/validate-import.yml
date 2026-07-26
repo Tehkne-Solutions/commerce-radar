@@ -1,0 +1,88 @@
+name: Validar importação CSV
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate-import:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe
+        run: |
+          node --check import.js
+          node --check data.js
+          node --check sw.js
+
+      - name: Testar parser e normalização brasileira
+        run: |
+          node <<'NODE'
+          global.window = {};
+          global.document = { readyState: 'loading', addEventListener() {} };
+          require('./import.js');
+          const api = window.CommerceRadarImport;
+          if (!api) throw new Error('API de importação não inicializada');
+
+          const money = api.parseNumber('R$ 1.234,56');
+          if (Math.abs(money - 1234.56) > 0.001) throw new Error(`Moeda pt-BR inválida: ${money}`);
+          if (api.parseNumber('90,00') !== 90) throw new Error('Vírgula decimal não reconhecida');
+
+          const csv = '\uFEFFproduto;sku;canal;preco;pedidos;receita\n"Organizador; premium";ORG-1;Shopee;39,90;7;279,30\nSuporte;SUP-2;Mercado Livre;89,90;3;269,70';
+          const parsed = api.parseCSV(csv);
+          if (parsed.delimiter !== ';') throw new Error(`Separador incorreto: ${parsed.delimiter}`);
+          if (parsed.rows.length !== 2) throw new Error(`Linhas incorretas: ${parsed.rows.length}`);
+          if (parsed.rows[0].produto !== 'Organizador; premium') throw new Error('Campo entre aspas foi quebrado');
+
+          const mapping = api.autoMapping(parsed.headers);
+          for (const field of ['product', 'sku', 'channel', 'price', 'orders', 'revenue']) {
+            if (!mapping[field]) throw new Error(`Mapeamento automático ausente: ${field}`);
+          }
+
+          const aggregated = api.aggregate([
+            {product:'Produto A',sku:'A',category:'negocios',channel:'Shopee',cost:20,price:50,units:2,orders:2,revenue:100,views:1000,clicks:40,investment:10,stock:5,date:'2026-07-01'},
+            {product:'Produto A',sku:'A',category:'negocios',channel:'Shopee',cost:20,price:50,units:3,orders:3,revenue:150,views:500,clicks:20,investment:5,stock:4,date:'2026-07-02'}
+          ]);
+          if (aggregated.length !== 1) throw new Error('Agregação por SKU/canal falhou');
+          if (aggregated[0].orders !== 5 || aggregated[0].revenue !== 250) throw new Error('Totais agregados incorretos');
+          if (aggregated[0].margin !== 60) throw new Error(`Margem incorreta: ${aggregated[0].margin}`);
+          console.log('Parser, moeda pt-BR, mapeamento e agregação válidos.');
+          NODE
+
+      - name: Validar interface, loader e PWA
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const code = fs.readFileSync('import.js', 'utf8');
+          const data = fs.readFileSync('data.js', 'utf8');
+          const sw = fs.readFileSync('sw.js', 'utf8');
+          const required = [
+            'Importar CSV',
+            'MAPEAMENTO',
+            'Importar e atualizar radar',
+            'Modelo de produtos',
+            'Modelo de vendas',
+            'Modelo de métricas',
+            'tehkne-commerce-radar-v4-imports',
+            "version:'0.4.0'",
+            'Tehkné Solutions'
+          ];
+          for (const marker of required) {
+            if (!code.includes(marker)) throw new Error(`Marcador ausente: ${marker}`);
+          }
+          for (const asset of ['./import.css', './import.js']) {
+            if (!data.includes(asset)) throw new Error(`Loader ausente: ${asset}`);
+            if (!sw.includes(asset)) throw new Error(`Cache offline ausente: ${asset}`);
+          }
+          if (!code.includes('R$ 1.234,56') && !code.includes("currency:'BRL'")) {
+            throw new Error('Formatação monetária pt-BR ausente');
+          }
+          console.log('Interface, modelos, loader, assinatura e PWA válidos.');
+          NODE
