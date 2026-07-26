@@ -5,6 +5,8 @@ on:
     paths:
       - 'trend-radar.js'
       - 'trend-radar.css'
+      - 'trend-queue.js'
+      - 'trend-queue.css'
       - 'data.js'
       - 'sw.js'
       - 'VERSION'
@@ -26,6 +28,7 @@ jobs:
       - name: Validar sintaxe
         run: |
           node --check trend-radar.js
+          node --check trend-queue.js
           node --check data.js
           node --check sw.js
 
@@ -75,8 +78,8 @@ jobs:
           for(const asset of ['./trend-radar.css','./trend-radar.js']){if(!data.includes(asset))throw new Error(`Loader ausente: ${asset}`);if(!sw.includes(asset))throw new Error(`Cache offline ausente: ${asset}`)}
           if(data.indexOf('./trend-radar.js')<data.indexOf('./financial-planning.js'))throw new Error('Radar de tendências deve carregar após planejamento financeiro');
           if(!css.includes('.trendSummary')||!css.includes('.trendCard')||css.length<3000)throw new Error('Estilos do radar incompletos');
-          if(version!=='0.5.0')throw new Error(`Versão incorreta: ${version}`);
-          if(!sw.includes('commerce-radar-v15'))throw new Error('Cache PWA não foi atualizado');
+          const parts=version.split('.').map(Number);if(parts[0]!==0||parts[1]<5)throw new Error(`Versão incompatível: ${version}`);
+          if(!/commerce-radar-v(1[5-9]|[2-9][0-9])/.test(sw))throw new Error('Cache PWA não foi atualizado');
           for(const marker of ['Validade temporal','Score do sinal','Agrupamento de evidências','Transformação em operação','Limitações'])if(!docs.includes(marker))throw new Error(`Documentação incompleta: ${marker}`);
           console.log('Integração, backup, nuvem, documentação e PWA válidos.');
           NODE

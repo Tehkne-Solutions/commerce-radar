@@ -41,6 +41,7 @@ if(typeof document!=='undefined'){
     addStyle('./financial-close.css');
     addStyle('./financial-planning.css');
     addStyle('./trend-radar.css');
-    addScript('./cloud-config.js',()=>addScript('./cloud.js',()=>addScript('./cloud-bootstrap.js',()=>addScript('./cloud-diagnostics.js',()=>addScript('./cloud-history.js',()=>addScript('./marketplace-adapters.js',()=>addScript('./import.js',()=>addScript('./financial-audit.js',()=>addScript('./financial-reconciliation.js',()=>addScript('./financial-close.js',()=>addScript('./financial-planning.js',()=>addScript('./trend-radar.js'))))))))))));
+    addStyle('./trend-queue.css');
+    addScript('./cloud-config.js',()=>addScript('./cloud.js',()=>addScript('./cloud-bootstrap.js',()=>addScript('./cloud-diagnostics.js',()=>addScript('./cloud-history.js',()=>addScript('./marketplace-adapters.js',()=>addScript('./import.js',()=>addScript('./financial-audit.js',()=>addScript('./financial-reconciliation.js',()=>addScript('./financial-close.js',()=>addScript('./financial-planning.js',()=>addScript('./trend-radar.js',()=>addScript('./trend-queue.js')))))))))))));
   },{once:true});
 }

@@ -2,11 +2,12 @@
 
 Produto web para ajudar empreendedores a identificar sinais, decidir **o que vender, onde vender, como validar, quanto capital será necessário e se a operação realmente gera caixa**.
 
-## MVP 0.5.0
+## MVP 0.5.1
 
 - Radar com 20 oportunidades iniciais.
-- Radar de tendências com fontes, validade e confiança.
-- Agrupamento de evidências, contradições e ranking temporal.
+- Radar de tendências com fontes, validade, confiança e contradições.
+- Fila de atualização de fontes com prioridade, vencimentos e revisão em lote.
+- Histórico auditável de alterações por sinal.
 - Cadastro de oportunidades próprias.
 - Score, margem, preço mínimo e ranking de canais.
 - Kanban de experimentos e planos de lançamento.
@@ -15,10 +16,7 @@ Produto web para ajudar empreendedores a identificar sinais, decidir **o que ven
 - Auditoria de margem líquida por produto e canal.
 - Reconciliação financeira por pedido, taxas e repasses.
 - Fechamento financeiro por período.
-- Comparação de canais e evolução mensal da margem.
-- Controle de repasses pendentes, parciais, recebidos e contestados.
 - Metas, orçamento, ponto de equilíbrio e projeção de caixa.
-- Cenários conservador, provável e otimista.
 - Backup, restauração, histórico e sincronização opcional.
 - Provisionamento automatizado do Supabase.
 - PWA e modo local preservados.
@@ -47,6 +45,7 @@ Acesse `http://localhost:4173`.
 
 ```text
 Registrar sinais e fontes
+→ revisar validade e prioridade
 → priorizar tendências
 → criar oportunidade
 → analisar
@@ -62,31 +61,32 @@ Registrar sinais e fontes
 
 ## Radar de tendências
 
-A tela **Radar de tendências** registra sinais com:
+A tela **Radar de tendências** registra produto, categoria, fonte, URL, geografia, período, data, validade, crescimento, demanda, concorrência, margem, risco, confiança e evidência.
 
-- produto ou tema;
-- categoria;
-- tipo, nome e URL da fonte;
-- geografia e período analisado;
-- data de observação e validade;
-- crescimento, demanda, concorrência, margem, risco e confiança;
-- evidência textual e observações.
+O score pondera crescimento, demanda, margem potencial, concorrência invertida, risco invertido, confiança, frescor e qualidade da fonte. Sinais do mesmo tema são agrupados; fontes diferentes aumentam a confirmação e divergências relevantes geram o aviso **Sinais contraditórios**.
 
-O score pondera crescimento, demanda, margem potencial, concorrência invertida, risco invertido, confiança, frescor e qualidade do tipo de fonte.
-
-Sinais do mesmo tema são agrupados. Fontes diferentes aumentam a confirmação, enquanto avaliações muito divergentes geram o aviso **Sinais contraditórios**. Evidências vencidas deixam de aparecer por padrão, mas permanecem auditáveis.
-
-Uma tendência pode gerar uma oportunidade própria ou um teste no estágio de pesquisa. Também é possível importar e exportar os sinais em CSV.
-
-O módulo não consulta nem raspa fontes automaticamente. Interesse e popularidade não comprovam intenção de compra.
+Uma tendência pode gerar uma oportunidade própria ou um teste no estágio de pesquisa. O módulo não consulta nem raspa fontes automaticamente.
 
 Guia: [`docs/TREND_RADAR.md`](docs/TREND_RADAR.md).
 
+## Fila de atualização de fontes
+
+A tela **Fila de fontes** organiza a manutenção das evidências por:
+
+- vencimento ou atraso;
+- revisão em 3, 7 ou 15 dias;
+- prioridade alta, média ou baixa;
+- contradição entre fontes;
+- confiança do sinal;
+- estado pendente, revisado ou adiado.
+
+É possível revisar várias fontes, aplicar prioridade alta ou adiar a próxima revisão em lote. Cada ação cria uma entrada no histórico do sinal, contendo data, nota e valores anteriores e posteriores.
+
+Guia: [`docs/SOURCE_UPDATE_QUEUE.md`](docs/SOURCE_UPDATE_QUEUE.md).
+
 ## Importação de dados
 
-A tela **Importar dados** aceita arquivos de até 8 MB e processa até 20.000 linhas no navegador.
-
-O sistema reconhece separadores comuns, arquivos com BOM, valores monetários pt-BR e cabeçalhos em português ou inglês.
+A tela **Importar dados** aceita arquivos de até 8 MB e processa até 20.000 linhas no navegador. Reconhece separadores comuns, BOM, valores monetários pt-BR e cabeçalhos em português ou inglês.
 
 Adaptadores disponíveis:
 
@@ -95,82 +95,29 @@ Adaptadores disponíveis:
 - WooCommerce — produtos e pedidos;
 - Shopify — produtos e pedidos.
 
-Guias:
+Guias: [`docs/CSV_IMPORT.md`](docs/CSV_IMPORT.md) e [`docs/MARKETPLACE_ADAPTERS.md`](docs/MARKETPLACE_ADAPTERS.md).
 
-- [`docs/CSV_IMPORT.md`](docs/CSV_IMPORT.md)
-- [`docs/MARKETPLACE_ADAPTERS.md`](docs/MARKETPLACE_ADAPTERS.md)
+## Operação financeira
 
-## Auditoria financeira
+O Commerce Radar inclui:
 
-A tela **Auditoria financeira** calcula:
-
-- receita líquida;
-- custos totais;
-- lucro e margem líquida;
-- contribuição antes da mídia;
-- lucro por pedido;
-- CPA;
-- ROAS e ROAS de equilíbrio;
-- alertas e reconciliação contra perfis planejados.
-
-O sistema não presume tarifas fixas de marketplace.
-
-Guia: [`docs/FINANCIAL_AUDIT.md`](docs/FINANCIAL_AUDIT.md).
-
-## Reconciliação por pedido
-
-A tela **Reconciliação por pedido**:
-
-1. agrupa várias linhas pelo identificador do pedido;
-2. soma taxas cobradas por item;
-3. conta uma vez valores repetidos do pedido;
-4. ignora pedidos cancelados;
-5. calcula o repasse esperado;
-6. compara o repasse informado;
-7. rateia custos entre produtos;
-8. cria auditorias financeiras.
-
-Guia: [`docs/ORDER_RECONCILIATION.md`](docs/ORDER_RECONCILIATION.md).
-
-## Fechamento financeiro
-
-A tela **Fechamento financeiro** consolida um intervalo e apresenta:
-
-- receita, custos, lucro e margem;
-- comparação entre canais;
-- evolução mensal da margem;
-- repasses esperados, informados, recebidos e pendentes;
-- atrasos e contestações;
-- divergências de repasse;
-- cobertura de dados reais;
-- snapshots de períodos fechados.
-
-Controles de repasse podem ser criados manualmente ou gerados a partir dos lotes reconciliados.
-
-Guia: [`docs/PERIOD_CLOSE.md`](docs/PERIOD_CLOSE.md).
-
-## Metas, orçamento e projeção de caixa
-
-A tela **Metas e caixa** usa as auditorias do período-base para calcular:
-
-- receita e pedidos mensalizados;
-- margem de contribuição;
-- ponto de equilíbrio;
-- capital para cobertura de estoque;
-- necessidade causada pelo intervalo até o repasse;
-- reserva de custos fixos;
-- margem de segurança;
-- fluxo mensal de recebimentos e saídas;
-- déficit máximo e caixa final;
+- auditoria de receita, custos, lucro, margem, CPA e ROAS;
+- reconciliação de pedidos, taxas, fretes, descontos e repasses;
+- fechamento por período e comparação entre canais;
+- controle de recebimentos pendentes, parciais e contestados;
+- ponto de equilíbrio, capital de giro e projeção de caixa;
 - cenários conservador, provável e otimista.
 
-O usuário informa meta mensal, custos fixos, caixa inicial, prazo de repasse, cobertura de estoque, reserva e horizonte da projeção. Receitas são deslocadas entre os meses conforme o prazo informado, permitindo distinguir lucro contábil de disponibilidade real de caixa.
+Guias:
 
-Guia: [`docs/FINANCIAL_PLANNING.md`](docs/FINANCIAL_PLANNING.md).
+- [`docs/FINANCIAL_AUDIT.md`](docs/FINANCIAL_AUDIT.md)
+- [`docs/ORDER_RECONCILIATION.md`](docs/ORDER_RECONCILIATION.md)
+- [`docs/PERIOD_CLOSE.md`](docs/PERIOD_CLOSE.md)
+- [`docs/FINANCIAL_PLANNING.md`](docs/FINANCIAL_PLANNING.md)
 
 ## Backup e sincronização
 
-O backup da v0.5.0 contém:
+O backup da v0.5.1 contém:
 
 ```text
 analyses
@@ -186,6 +133,9 @@ periodClosings
 financialPlans
 trendSignals
 trendSettings
+trendReviewQueue
+trendSignalHistory
+trendQueueSettings
 ```
 
 Backups antigos continuam compatíveis. Os mesmos campos entram no workspace sincronizado, sem nova migration, pois o estado é armazenado como JSON versionado.
@@ -210,23 +160,18 @@ Guia: [`docs/AUTOMATED_ACTIVATION.md`](docs/AUTOMATED_ACTIVATION.md).
 - O modo local não transmite dados.
 - Arquivos são processados no navegador.
 - CSVs brutos não são armazenados no histórico.
-- URLs e evidências de tendência só são armazenadas quando informadas pelo usuário.
-- PAT e senha do banco ficam somente em GitHub Secrets.
+- URLs e evidências só são armazenadas quando informadas pelo usuário.
 - Escritas na nuvem passam por RPC versionado.
 - Cada usuário acessa somente os próprios registros por RLS.
 - Backups não incluem credenciais.
 
 ## Limitações
 
-- O catálogo contém hipóteses, não retorno garantido.
 - Tendência, busca e popularidade não comprovam venda.
+- Revisar uma fonte não comprova que a informação esteja correta.
+- Adiar uma revisão não renova a validade da evidência.
 - A qualidade dos resultados depende das fontes e dados informados.
-- Duas fontes podem repetir a mesma origem primária.
-- Sinais podem ser sazonais, manipulados ou efêmeros.
-- Cabeçalhos e relatórios de marketplaces podem mudar.
-- Um lote pode misturar ajustes de períodos diferentes.
-- O valor informado por um canal não comprova recebimento bancário.
-- Projeções dependem das premissas e não garantem venda, lucro ou liquidez.
+- Projeções não garantem venda, lucro ou liquidez.
 - A ferramenta não substitui contabilidade, apuração fiscal, conciliação bancária, análise de crédito ou aconselhamento financeiro.
 - Não há conexão OAuth direta com marketplaces nesta versão.
 
@@ -240,7 +185,7 @@ A `main` é publicada automaticamente pelo GitHub Pages.
 
 ## Roadmap
 
-- v0.5.1: fila de atualização de fontes e revisão em lote.
+- v0.5.2: responsáveis, calendário e alertas de revisão.
 - v0.6: recomendações com evidências e ranking temporal.
 - v1.0: inteligência de mercado e recomendações assistidas.
 
