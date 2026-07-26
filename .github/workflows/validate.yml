@@ -153,7 +153,7 @@ jobs:
           if duplicates:
               raise SystemExit(f'IDs HTML duplicados: {duplicates}')
 
-          referenced = set(re.findall(r"\$('([^']+)'\)", app))
+          referenced = set(re.findall(r"\$\('([^']+)'\)", app))
           missing = sorted(referenced - set(parser.ids))
           if missing:
               raise SystemExit(f'IDs estáticos referenciados e ausentes: {missing}')
