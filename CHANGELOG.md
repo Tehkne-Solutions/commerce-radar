@@ -1,5 +1,34 @@
 # Changelog — Commerce Radar
 
+## 0.3.1 — Ativação Automatizada
+
+### Adicionado
+
+- Workflow manual para usar um projeto Supabase existente ou criar um novo.
+- Espera automática do estado saudável do projeto.
+- Aplicação versionada de migrations com Supabase CLI.
+- Geração automática do `cloud-config.js` com URL e publishable key.
+- Teste automático de Auth, Data API e isolamento anônimo por RLS.
+- Commit automático da configuração pública na `main`.
+- Migration em `supabase/migrations` para uso por `supabase db push`.
+- Botão **Criar conta e ativar agora**.
+- Primeiro envio automático do workspace após criação ou login.
+- Continuação do envio após confirmação por e-mail.
+- Guia completo em `docs/AUTOMATED_ACTIVATION.md`.
+
+### Segurança
+
+- PAT do Supabase e senha do banco permanecem somente nos GitHub Secrets.
+- Nenhuma chave secreta ou service-role é enviada ao navegador.
+- A chave publicada é somente a publishable/anon key.
+- A consulta anônima é verificada para retornar uma lista vazia protegida por RLS.
+
+### Compatibilidade
+
+- O modo local continua funcionando sem configuração.
+- A ativação manual da versão 0.3 permanece disponível.
+- Os workspaces e backups anteriores continuam válidos.
+
 ## 0.3.0 — Conta e Sincronização
 
 ### Adicionado

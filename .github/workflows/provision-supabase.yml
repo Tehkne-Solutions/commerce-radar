@@ -1,0 +1,246 @@
+name: Provisionar Supabase
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: Usar projeto existente ou criar um novo
+        required: true
+        default: existing
+        type: choice
+        options:
+          - existing
+          - create
+      project_ref:
+        description: Project ref quando mode=existing
+        required: false
+        type: string
+      organization_slug:
+        description: Slug da organização quando mode=create
+        required: false
+        type: string
+      project_name:
+        description: Nome do projeto quando mode=create
+        required: false
+        default: commerce-radar
+        type: string
+      region:
+        description: Região do projeto quando mode=create
+        required: false
+        default: sa-east-1
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: commerce-radar-supabase-provision
+  cancel-in-progress: false
+
+jobs:
+  provision:
+    runs-on: ubuntu-latest
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+
+    steps:
+      - name: Baixar main
+        uses: actions/checkout@v6
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Validar segredos
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -n "${SUPABASE_ACCESS_TOKEN:-}" || { echo 'Adicione o secret SUPABASE_ACCESS_TOKEN.'; exit 1; }
+          test -n "${SUPABASE_DB_PASSWORD:-}" || { echo 'Adicione o secret SUPABASE_DB_PASSWORD.'; exit 1; }
+
+      - name: Instalar Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Resolver ou criar projeto
+        id: project
+        shell: bash
+        env:
+          MODE: ${{ inputs.mode }}
+          INPUT_REF: ${{ inputs.project_ref }}
+          ORG_SLUG: ${{ inputs.organization_slug }}
+          PROJECT_NAME: ${{ inputs.project_name }}
+          REGION: ${{ inputs.region }}
+        run: |
+          set -euo pipefail
+
+          if [[ "$MODE" == "existing" ]]; then
+            test -n "$INPUT_REF" || { echo 'Informe project_ref para usar um projeto existente.'; exit 1; }
+            PROJECT_REF="$INPUT_REF"
+          else
+            test -n "$ORG_SLUG" || { echo 'Informe organization_slug para criar o projeto.'; exit 1; }
+
+            BODY=$(jq -n \
+              --arg name "$PROJECT_NAME" \
+              --arg organization_slug "$ORG_SLUG" \
+              --arg db_pass "$SUPABASE_DB_PASSWORD" \
+              --arg region "$REGION" \
+              '{name:$name,organization_slug:$organization_slug,db_pass:$db_pass,region:$region}')
+
+            RESPONSE=$(curl --fail-with-body --silent --show-error \
+              -X POST 'https://api.supabase.com/v1/projects' \
+              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+              -H 'Content-Type: application/json' \
+              --data "$BODY")
+
+            PROJECT_REF=$(jq -r '.ref // empty' <<<"$RESPONSE")
+            test -n "$PROJECT_REF" || { echo 'A API não retornou o project ref.'; exit 1; }
+          fi
+
+          [[ "$PROJECT_REF" =~ ^[a-z0-9]{20}$ ]] || { echo 'Project ref inválido.'; exit 1; }
+          echo "project_ref=$PROJECT_REF" >> "$GITHUB_OUTPUT"
+          echo "project_url=https://$PROJECT_REF.supabase.co" >> "$GITHUB_OUTPUT"
+          echo "Projeto resolvido: $PROJECT_REF"
+
+      - name: Aguardar serviços saudáveis
+        shell: bash
+        env:
+          PROJECT_REF: ${{ steps.project.outputs.project_ref }}
+        run: |
+          set -euo pipefail
+          READY=false
+          for attempt in $(seq 1 60); do
+            if curl --fail --silent --show-error \
+              -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+              "https://api.supabase.com/v1/projects/$PROJECT_REF/health" \
+              -o /tmp/supabase-health.json; then
+              if jq -e '.. | strings | select(. == "ACTIVE_HEALTHY" or . == "ACTIVE")' /tmp/supabase-health.json >/dev/null; then
+                READY=true
+                break
+              fi
+            fi
+            echo "Aguardando projeto ficar saudável ($attempt/60)..."
+            sleep 10
+          done
+          [[ "$READY" == true ]] || { echo 'O projeto não ficou saudável dentro do limite.'; exit 1; }
+
+      - name: Aplicar migrations e RLS
+        shell: bash
+        env:
+          PROJECT_REF: ${{ steps.project.outputs.project_ref }}
+        run: |
+          set -euo pipefail
+          supabase link --project-ref "$PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+          supabase db push --linked --password "$SUPABASE_DB_PASSWORD"
+
+      - name: Obter chave pública e gerar configuração
+        id: config
+        shell: bash
+        env:
+          PROJECT_REF: ${{ steps.project.outputs.project_ref }}
+          PROJECT_URL: ${{ steps.project.outputs.project_url }}
+        run: |
+          set -euo pipefail
+
+          curl --fail-with-body --silent --show-error \
+            -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
+            "https://api.supabase.com/v1/projects/$PROJECT_REF/api-keys?reveal=true" \
+            -o /tmp/supabase-keys.json
+
+          PUBLISHABLE_KEY=$(python <<'PY'
+          import json
+          data = json.load(open('/tmp/supabase-keys.json', encoding='utf-8'))
+          key = ''
+          for item in data:
+              if item.get('type') == 'publishable':
+                  key = item.get('api_key', '')
+                  break
+          if not key:
+              for item in data:
+                  if item.get('name') == 'anon' or item.get('type') == 'anon':
+                      key = item.get('api_key', '')
+                      break
+          print(key)
+          PY
+          )
+
+          test -n "$PUBLISHABLE_KEY" || { echo 'Nenhuma publishable/anon key foi encontrada.'; exit 1; }
+          echo "::add-mask::$PUBLISHABLE_KEY"
+
+          python - "$PROJECT_URL" "$PUBLISHABLE_KEY" <<'PY'
+          import json, sys
+          url, key = sys.argv[1:3]
+          config = (
+              "window.COMMERCE_RADAR_CLOUD = {\n"
+              f"  url: {json.dumps(url)},\n"
+              f"  publishableKey: {json.dumps(key)},\n"
+              "  table: 'commerce_radar_workspaces'\n"
+              "};\n"
+          )
+          open('cloud-config.js', 'w', encoding='utf-8').write(config)
+          PY
+
+          echo "project_url=$PROJECT_URL" >> "$GITHUB_OUTPUT"
+
+      - name: Verificar Auth, Data API e RLS
+        shell: bash
+        env:
+          PROJECT_URL: ${{ steps.project.outputs.project_url }}
+        run: |
+          set -euo pipefail
+          PUBLISHABLE_KEY=$(python - <<'PY'
+          import re
+          text = open('cloud-config.js', encoding='utf-8').read()
+          match = re.search(r"publishableKey:\s*['\"]([^'\"]+)", text)
+          print(match.group(1) if match else '')
+          PY
+          )
+          test -n "$PUBLISHABLE_KEY"
+          echo "::add-mask::$PUBLISHABLE_KEY"
+
+          curl --fail --silent --show-error \
+            -H "apikey: $PUBLISHABLE_KEY" \
+            "$PROJECT_URL/auth/v1/health" >/dev/null
+
+          HTTP_CODE=$(curl --silent --show-error -o /tmp/workspaces.json -w '%{http_code}' \
+            -H "apikey: $PUBLISHABLE_KEY" \
+            "$PROJECT_URL/rest/v1/commerce_radar_workspaces?select=user_id&limit=1")
+          [[ "$HTTP_CODE" == "200" ]] || { cat /tmp/workspaces.json; exit 1; }
+          jq -e 'type == "array" and length == 0' /tmp/workspaces.json >/dev/null || {
+            echo 'A consulta anônima deveria retornar uma lista vazia protegida por RLS.'
+            cat /tmp/workspaces.json
+            exit 1
+          }
+
+      - name: Publicar configuração na main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add cloud-config.js
+          if git diff --cached --quiet; then
+            echo 'cloud-config.js já está atualizado.'
+          else
+            git commit -m 'chore: activate Supabase cloud configuration'
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
+
+      - name: Resumo
+        shell: bash
+        env:
+          PROJECT_REF: ${{ steps.project.outputs.project_ref }}
+          PROJECT_URL: ${{ steps.project.outputs.project_url }}
+        run: |
+          {
+            echo '## Supabase ativado'
+            echo
+            echo "- Project ref: \`$PROJECT_REF\`"
+            echo "- Project URL: \`$PROJECT_URL\`"
+            echo '- Migration e políticas RLS aplicadas.'
+            echo '- Chave pública adicionada ao `cloud-config.js`.'
+            echo '- O push na main acionará o deploy do GitHub Pages.'
+            echo '- Abra o Commerce Radar, crie a conta e use **Ativar e enviar agora**.'
+          } >> "$GITHUB_STEP_SUMMARY"
