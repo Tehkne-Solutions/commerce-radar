@@ -35,6 +35,7 @@ if(typeof document!=='undefined'){
     addStyle('./cloud-diagnostics.css');
     addStyle('./cloud-history.css');
     addStyle('./import.css');
-    addScript('./cloud-config.js',()=>addScript('./cloud.js',()=>addScript('./cloud-bootstrap.js',()=>addScript('./cloud-diagnostics.js',()=>addScript('./cloud-history.js',()=>addScript('./import.js'))))));
+    addStyle('./marketplace-adapters.css');
+    addScript('./cloud-config.js',()=>addScript('./cloud.js',()=>addScript('./cloud-bootstrap.js',()=>addScript('./cloud-diagnostics.js',()=>addScript('./cloud-history.js',()=>addScript('./marketplace-adapters.js',()=>addScript('./import.js')))))));
   },{once:true});
 }

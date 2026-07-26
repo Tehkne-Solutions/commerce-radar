@@ -1,5 +1,37 @@
 # Changelog — Commerce Radar
 
+## 0.4.1 — Adaptadores de Marketplaces
+
+### Adicionado
+
+- Detecção automática de arquivos de Mercado Livre, Shopee, WooCommerce e Shopify.
+- Preset manual para substituir a detecção automática.
+- Adaptadores separados para produtos e pedidos quando a plataforma possui formatos distintos.
+- Normalização de itens de linha do Shopify sem repetir o total completo do pedido.
+- Reconhecimento do Product CSV Import Schema do WooCommerce.
+- Suporte a exportações por item de pedidos e Analytics do WooCommerce.
+- Reconhecimento de campos comuns das vendas do Mercado Livre e equivalentes da API de orders.
+- Reconhecimento de campos comuns dos pedidos da Shopee em português e inglês.
+- Separação entre receita, custo, investimento em mídia e taxas identificadas.
+- Filtragem de pedidos cancelados, inválidos, anulados, falhos ou totalmente reembolsados.
+- Indicador de adaptador, confiança da detecção e quantidade de linhas normalizadas.
+- Documentação detalhada em `docs/MARKETPLACE_ADAPTERS.md`.
+- Workflow específico com amostras das quatro plataformas.
+
+### Privacidade e segurança
+
+- Transformação realizada inteiramente no navegador.
+- Nenhuma autenticação ou credencial das plataformas é solicitada.
+- Dados pessoais não necessários são descartados no formato normalizado.
+- O mapeamento continua revisável antes de qualquer gravação.
+- A detecção automática não elimina a confirmação do usuário.
+
+### Compatibilidade
+
+- Arquivos genéricos continuam usando o importador v0.4 sem alteração.
+- O modo local, o Supabase opcional, o histórico e os conflitos permanecem disponíveis.
+- O PWA inclui os adaptadores no cache offline.
+
 ## 0.4.0 — Importação de Dados
 
 ### Adicionado
