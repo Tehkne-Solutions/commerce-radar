@@ -1,0 +1,180 @@
+name: Validar auditoria financeira
+
+on:
+  pull_request:
+    paths:
+      - 'financial-audit.js'
+      - 'financial-audit.css'
+      - 'data.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/FINANCIAL_AUDIT.md'
+      - '.github/workflows/validate-financial-audit.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'financial-audit.js'
+      - 'financial-audit.css'
+      - 'data.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/FINANCIAL_AUDIT.md'
+
+permissions:
+  contents: read
+
+jobs:
+  validate-financial-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe
+        run: node --check financial-audit.js
+
+      - name: Testar cálculos financeiros
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const vm = require('node:vm');
+          const { webcrypto } = require('node:crypto');
+
+          const storage = new Map();
+          const context = {
+            window: {},
+            Intl,
+            console,
+            crypto: webcrypto,
+            localStorage: {
+              getItem: key => storage.has(key) ? storage.get(key) : null,
+              setItem: (key, value) => storage.set(key, String(value)),
+              removeItem: key => storage.delete(key)
+            }
+          };
+          context.globalThis = context;
+          vm.runInNewContext(fs.readFileSync('financial-audit.js', 'utf8'), context);
+          const api = context.window.CommerceRadarFinancial;
+          if (!api) throw new Error('API financeira não publicada.');
+
+          const audit = {
+            id: 'audit-1',
+            product: 'Produto teste',
+            channel: 'Mercado Livre',
+            quality: 'real',
+            orders: 10,
+            units: 10,
+            grossRevenue: 1000,
+            discounts: 20,
+            refunds: 50,
+            productCost: 400,
+            marketplaceFees: 100,
+            paymentFees: 20,
+            shippingCost: 80,
+            shippingSubsidy: 20,
+            taxes: 60,
+            advertising: 100,
+            packaging: 30,
+            otherCosts: 10
+          };
+          const result = api.computeAudit(audit);
+          const near = (actual, expected, tolerance = 0.001) => {
+            if (Math.abs(actual - expected) > tolerance) {
+              throw new Error(`Esperado ${expected}, recebido ${actual}`);
+            }
+          };
+
+          near(result.netSales, 930);
+          near(result.netShipping, 60);
+          near(result.totalCosts, 780);
+          near(result.contributionBeforeAds, 250);
+          near(result.netProfit, 150);
+          near(result.netMargin, 150 / 930 * 100);
+          near(result.profitPerOrder, 15);
+          near(result.cac, 10);
+          near(result.roas, 10);
+          near(result.breakEvenRoas, 930 / 250);
+          if (result.status !== 'profit') throw new Error('Cenário lucrativo classificado incorretamente.');
+
+          const profile = api.normalizeProfile({
+            id: 'profile-1',
+            name: 'Perfil teste',
+            channel: 'Mercado Livre',
+            marketplaceFeePct: 12,
+            paymentFeePct: 2,
+            taxPct: 6,
+            shippingPerOrder: 7,
+            packagingPerOrder: 3,
+            otherPerOrder: 1
+          });
+          const expected = api.expectedFromProfile(api.normalizeAudit(audit), profile);
+          near(expected.marketplaceFees, 120);
+          near(expected.paymentFees, 20);
+          near(expected.taxes, 60);
+          near(expected.shippingCost, 70);
+          near(expected.packaging, 30);
+          near(expected.otherCosts, 10);
+
+          const reconciled = api.reconcile(api.normalizeAudit(audit), expected);
+          if (!reconciled.items.find(item => item.key === 'marketplaceFees')?.alert) {
+            throw new Error('Variação relevante de taxa não detectada.');
+          }
+
+          const loss = api.computeAudit({...audit, id: 'audit-loss', advertising: 400});
+          if (loss.status !== 'loss' || loss.netProfit >= 0) throw new Error('Cenário de prejuízo inválido.');
+          if (!api.auditFlags(loss).some(flag => flag.level === 'danger')) throw new Error('Alerta de prejuízo ausente.');
+
+          const incomplete = api.normalizeAudit({id:'audit-incomplete', product:'Sem custo', channel:'Shopee', grossRevenue:100});
+          if (api.completeness(incomplete) >= 50) throw new Error('Completude superestimada.');
+
+          console.log('Cálculos financeiros validados.');
+          NODE
+
+      - name: Validar integração, backup, nuvem e PWA
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          financial = Path('financial-audit.js').read_text(encoding='utf-8')
+          data = Path('data.js').read_text(encoding='utf-8')
+          sw = Path('sw.js').read_text(encoding='utf-8')
+          css = Path('financial-audit.css').read_text(encoding='utf-8')
+          version = Path('VERSION').read_text(encoding='utf-8').strip()
+          docs = Path('docs/FINANCIAL_AUDIT.md').read_text(encoding='utf-8')
+
+          required_markers = [
+              'tehkne-commerce-radar-v42-financial-audits',
+              'tehkne-commerce-radar-v42-financial-profiles',
+              'financialAudits',
+              'financialProfiles',
+              'importBatches',
+              'ROAS de equilíbrio',
+              'Dados reais',
+              'Dados parciais',
+              'Estimado',
+              'Incompleto',
+              'Tehkné Solutions',
+          ]
+          missing = [item for item in required_markers if item not in financial]
+          if missing:
+              raise SystemExit(f'Marcadores financeiros ausentes: {missing}')
+
+          if "addScript('./import.js',()=>addScript('./financial-audit.js'))" not in data:
+              raise SystemExit('Ordem do loader financeiro inválida.')
+          if "addStyle('./financial-audit.css')" not in data:
+              raise SystemExit('CSS financeiro não carregado.')
+          for asset in ('./financial-audit.js', './financial-audit.css'):
+              if asset not in sw:
+                  raise SystemExit(f'Asset ausente no cache: {asset}')
+          if "commerce-radar-v11" not in sw:
+              raise SystemExit('Versão de cache não atualizada.')
+          if version != '0.4.2':
+              raise SystemExit(f'Versão inesperada: {version}')
+          if len(css) < 1000:
+              raise SystemExit('CSS financeiro incompleto.')
+          for marker in ('Receita líquida', 'Lucro líquido operacional', 'Perfis financeiros', 'R$ 1.000,00'):
+              if marker not in docs:
+                  raise SystemExit(f'Documentação incompleta: {marker}')
+
+          print('Integração financeira, backup, nuvem e PWA validados.')
+          PY
