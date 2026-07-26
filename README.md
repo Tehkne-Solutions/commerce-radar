@@ -2,11 +2,12 @@
 
 Produto web para ajudar empreendedores a identificar sinais, decidir **o que vender, onde vender, como validar, quanto capital será necessário e se a operação realmente gera caixa**.
 
-## MVP 0.5.1
+## MVP 0.5.2
 
 - Radar com 20 oportunidades iniciais.
 - Radar de tendências com fontes, validade, confiança e contradições.
 - Fila de atualização de fontes com prioridade, vencimentos e revisão em lote.
+- Responsáveis, calendário semanal/mensal e alertas de revisão.
 - Histórico auditável de alterações por sinal.
 - Cadastro de oportunidades próprias.
 - Score, margem, preço mínimo e ranking de canais.
@@ -46,6 +47,7 @@ Acesse `http://localhost:4173`.
 ```text
 Registrar sinais e fontes
 → revisar validade e prioridade
+→ atribuir responsáveis e prazos
 → priorizar tendências
 → criar oportunidade
 → analisar
@@ -84,6 +86,23 @@ A tela **Fila de fontes** organiza a manutenção das evidências por:
 
 Guia: [`docs/SOURCE_UPDATE_QUEUE.md`](docs/SOURCE_UPDATE_QUEUE.md).
 
+## Calendário de revisões
+
+A tela **Calendário de revisões** utiliza os mesmos prazos da fila e oferece:
+
+- visualização mensal de 42 dias;
+- visualização semanal;
+- cadastro de responsáveis;
+- atribuição por fonte;
+- filtro por responsável ou fontes sem atribuição;
+- reagendamento com prioridade e estado;
+- alertas de atrasos, revisões de hoje e próximos prazos;
+- notificações locais opcionais do navegador.
+
+O campo `nextReviewAt` é usado quando existe um reagendamento manual. Caso contrário, a agenda utiliza o vencimento da evidência. Reagendar não altera a data de observação e não renova a validade comercial da fonte.
+
+Guia: [`docs/REVIEW_CALENDAR.md`](docs/REVIEW_CALENDAR.md).
+
 ## Importação de dados
 
 A tela **Importar dados** aceita arquivos de até 8 MB e processa até 20.000 linhas no navegador. Reconhece separadores comuns, BOM, valores monetários pt-BR e cabeçalhos em português ou inglês.
@@ -117,7 +136,7 @@ Guias:
 
 ## Backup e sincronização
 
-O backup da v0.5.1 contém:
+O backup da v0.5.2 contém:
 
 ```text
 analyses
@@ -136,6 +155,9 @@ trendSettings
 trendReviewQueue
 trendSignalHistory
 trendQueueSettings
+trendOwners
+trendCalendarSettings
+trendAlertState
 ```
 
 Backups antigos continuam compatíveis. Os mesmos campos entram no workspace sincronizado, sem nova migration, pois o estado é armazenado como JSON versionado.
@@ -161,6 +183,8 @@ Guia: [`docs/AUTOMATED_ACTIVATION.md`](docs/AUTOMATED_ACTIVATION.md).
 - Arquivos são processados no navegador.
 - CSVs brutos não são armazenados no histórico.
 - URLs e evidências só são armazenadas quando informadas pelo usuário.
+- E-mails de responsáveis são opcionais e não são utilizados para envio automático.
+- Notificações locais dependem de consentimento explícito do navegador.
 - Escritas na nuvem passam por RPC versionado.
 - Cada usuário acessa somente os próprios registros por RLS.
 - Backups não incluem credenciais.
@@ -170,6 +194,8 @@ Guia: [`docs/AUTOMATED_ACTIVATION.md`](docs/AUTOMATED_ACTIVATION.md).
 - Tendência, busca e popularidade não comprovam venda.
 - Revisar uma fonte não comprova que a informação esteja correta.
 - Adiar uma revisão não renova a validade da evidência.
+- Reagendar no calendário não atualiza a observação da fonte.
+- Notificações locais não funcionam com o aplicativo totalmente fechado.
 - A qualidade dos resultados depende das fontes e dados informados.
 - Projeções não garantem venda, lucro ou liquidez.
 - A ferramenta não substitui contabilidade, apuração fiscal, conciliação bancária, análise de crédito ou aconselhamento financeiro.
@@ -185,7 +211,7 @@ A `main` é publicada automaticamente pelo GitHub Pages.
 
 ## Roadmap
 
-- v0.5.2: responsáveis, calendário e alertas de revisão.
+- v0.5.3: indicadores de cumprimento, carga por responsável e rotina de revisão.
 - v0.6: recomendações com evidências e ranking temporal.
 - v1.0: inteligência de mercado e recomendações assistidas.
 
