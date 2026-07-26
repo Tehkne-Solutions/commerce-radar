@@ -36,6 +36,7 @@ if(typeof document!=='undefined'){
     addStyle('./cloud-history.css');
     addStyle('./import.css');
     addStyle('./marketplace-adapters.css');
-    addScript('./cloud-config.js',()=>addScript('./cloud.js',()=>addScript('./cloud-bootstrap.js',()=>addScript('./cloud-diagnostics.js',()=>addScript('./cloud-history.js',()=>addScript('./marketplace-adapters.js',()=>addScript('./import.js')))))));
+    addStyle('./financial-audit.css');
+    addScript('./cloud-config.js',()=>addScript('./cloud.js',()=>addScript('./cloud-bootstrap.js',()=>addScript('./cloud-diagnostics.js',()=>addScript('./cloud-history.js',()=>addScript('./marketplace-adapters.js',()=>addScript('./import.js',()=>addScript('./financial-audit.js'))))))));
   },{once:true});
 }
