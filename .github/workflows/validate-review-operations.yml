@@ -1,0 +1,125 @@
+name: Validar operação de revisões
+
+on:
+  pull_request:
+    paths:
+      - 'trend-operations.js'
+      - 'trend-operations.css'
+      - 'trend-calendar.js'
+      - 'cloud-bootstrap.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/REVIEW_OPERATIONS.md'
+      - '.github/workflows/validate-review-operations.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-review-operations:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe
+        run: |
+          node --check trend-operations.js
+          node --check cloud-bootstrap.js
+          node --check sw.js
+
+      - name: Testar cumprimento, carga, rotina e snapshots
+        run: |
+          node <<'NODE'
+          const store = new Map();
+          global.window = undefined;
+          global.document = undefined;
+          global.localStorage = {
+            getItem: key => store.has(key) ? store.get(key) : null,
+            setItem: (key, value) => store.set(key, String(value)),
+          };
+          const events = [
+            { id: 'a1', date: '2026-07-20', ownerId: 'owner-a', ownerName: 'Ana', priority: 'high', contradiction: false },
+            { id: 'a2', date: '2026-07-26', ownerId: 'owner-a', ownerName: 'Ana', priority: 'medium', contradiction: true },
+            { id: 'b1', date: '2026-07-29', ownerId: 'owner-b', ownerName: 'Bruno', priority: 'medium', contradiction: false },
+            { id: 'u1', date: '2026-07-28', ownerId: '', ownerName: 'Sem responsável', priority: 'low', contradiction: false },
+          ];
+          global.CommerceRadarReviewCalendar = { buildEvents: () => events };
+          require('./trend-operations.js');
+          const api = global.CommerceRadarReviewOperations;
+          if (!api) throw new Error('API operacional não inicializada');
+
+          const history = [
+            { signalId: 'a1', action: 'source_reviewed', at: '2026-07-25T10:00:00Z' },
+            { signalId: 'a2', action: 'batch_review', at: '2026-07-26T09:00:00Z' },
+            { signalId: 'a2', action: 'batch_review', at: '2026-07-26T11:00:00Z' },
+          ];
+          const metrics = api.complianceMetrics(events, history, 7, '2026-07-26');
+          if (metrics.completed !== 2 || metrics.overdue !== 1 || metrics.compliance !== 67) {
+            throw new Error(`Cumprimento inválido: ${JSON.stringify(metrics)}`);
+          }
+
+          const owners = [
+            { id: 'owner-a', name: 'Ana', active: true },
+            { id: 'owner-b', name: 'Bruno', active: true },
+          ];
+          const workload = api.workloadByOwner(events, owners, history, '2026-07-26', {
+            defaultWeeklyCapacity: 8,
+            ownerCapacity: { 'owner-a': 1, 'owner-b': 2 },
+          });
+          const ana = workload.find(row => row.ownerId === 'owner-a');
+          const unassigned = workload.find(row => row.ownerId === 'unassigned');
+          if (!ana || ana.demand !== 2 || ana.utilization !== 200 || ana.status !== 'Sobrecarregado') {
+            throw new Error(`Carga da Ana inválida: ${JSON.stringify(ana)}`);
+          }
+          if (!unassigned || unassigned.due7 !== 1 || unassigned.status !== 'Sem dono') {
+            throw new Error('Fontes sem responsável não foram identificadas');
+          }
+
+          const routine = api.routineItems(events, workload, '2026-07-26', { dailyTarget: 4 });
+          if (!routine.some(item => item.id === 'review-overdue' && item.count === 1)) throw new Error('Rotina de atraso inválida');
+          if (!routine.some(item => item.id === 'rebalance-workload' && item.count === 1)) throw new Error('Rotina de sobrecarga inválida');
+
+          store.set('tehkne-commerce-radar-v52-review-owners', JSON.stringify(owners));
+          store.set('tehkne-commerce-radar-v51-signal-history', JSON.stringify(history));
+          store.set('tehkne-commerce-radar-v53-operational-settings', JSON.stringify({ periodDays: 7, defaultWeeklyCapacity: 8, ownerCapacity: { 'owner-a': 1 }, dailyTarget: 4 }));
+          const snapshot = api.captureSnapshot('2026-07-26', true);
+          if (snapshot.metrics.compliance !== 67 || snapshot.workload.length < 3) throw new Error('Snapshot operacional inválido');
+          const saved = JSON.parse(store.get('tehkne-commerce-radar-v53-compliance-snapshots'));
+          if (saved.length !== 1 || saved[0].date !== '2026-07-26') throw new Error('Snapshot não foi persistido');
+
+          const run = api.routineRun('2026-07-26');
+          api.toggleRoutineItem(run.items[0].id, true, '2026-07-26');
+          const savedRuns = JSON.parse(store.get('tehkne-commerce-radar-v53-routine-runs'));
+          if (!savedRuns[0].items[0].done) throw new Error('Checklist da rotina não foi persistido');
+          console.log('Cumprimento, carga, rotina e snapshots válidos.');
+          NODE
+
+      - name: Validar integração, backup, nuvem e PWA
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const code = fs.readFileSync('trend-operations.js', 'utf8');
+          const css = fs.readFileSync('trend-operations.css', 'utf8');
+          const bootstrap = fs.readFileSync('cloud-bootstrap.js', 'utf8');
+          const sw = fs.readFileSync('sw.js', 'utf8');
+          const docs = fs.readFileSync('docs/REVIEW_OPERATIONS.md', 'utf8');
+          const version = fs.readFileSync('VERSION', 'utf8').trim();
+          for (const marker of ['Cumprimento, carga e rotina', 'trendOperationalSettings', 'trendComplianceSnapshots', 'trendRoutineRuns', "version: '0.5.3'", 'Tehkné Solutions']) {
+            if (!code.includes(marker)) throw new Error(`Marcador ausente: ${marker}`);
+          }
+          for (const asset of ['./trend-operations.css', './trend-operations.js']) {
+            if (!bootstrap.includes(asset)) throw new Error(`Bootstrap ausente: ${asset}`);
+            if (!sw.includes(asset)) throw new Error(`Cache offline ausente: ${asset}`);
+          }
+          if (bootstrap.indexOf('./trend-operations.js') < bootstrap.indexOf('./trend-calendar.js')) throw new Error('Operação deve carregar após calendário');
+          if (!css.includes('.toSummary') || !css.includes('.toWorkload') || css.length < 1800) throw new Error('Estilos operacionais incompletos');
+          if (version !== '0.5.3') throw new Error(`Versão incorreta: ${version}`);
+          if (!sw.includes('commerce-radar-v18')) throw new Error('Cache PWA não foi atualizado');
+          for (const marker of ['Indicador de cumprimento', 'Carga de trabalho', 'Rotina diária', 'Snapshots de cumprimento', 'Backup e sincronização']) {
+            if (!docs.includes(marker)) throw new Error(`Documentação incompleta: ${marker}`);
+          }
+          console.log('Integração, backup, nuvem, documentação e PWA válidos.');
+          NODE
