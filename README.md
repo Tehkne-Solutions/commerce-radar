@@ -2,12 +2,14 @@
 
 Produto web para ajudar empreendedores a identificar sinais, decidir **o que vender, onde vender, como validar, quanto capital será necessário e se a operação realmente gera caixa**.
 
-## MVP 0.5.2
+## MVP 0.5.3
 
 - Radar com 20 oportunidades iniciais.
 - Radar de tendências com fontes, validade, confiança e contradições.
 - Fila de atualização de fontes com prioridade, vencimentos e revisão em lote.
 - Responsáveis, calendário semanal/mensal e alertas de revisão.
+- Indicadores de cumprimento, capacidade e sobrecarga por responsável.
+- Rotina operacional diária e snapshots históricos.
 - Histórico auditável de alterações por sinal.
 - Cadastro de oportunidades próprias.
 - Score, margem, preço mínimo e ranking de canais.
@@ -48,6 +50,8 @@ Acesse `http://localhost:4173`.
 Registrar sinais e fontes
 → revisar validade e prioridade
 → atribuir responsáveis e prazos
+→ acompanhar cumprimento e capacidade
+→ executar a rotina operacional
 → priorizar tendências
 → criar oportunidade
 → analisar
@@ -103,6 +107,35 @@ O campo `nextReviewAt` é usado quando existe um reagendamento manual. Caso cont
 
 Guia: [`docs/REVIEW_CALENDAR.md`](docs/REVIEW_CALENDAR.md).
 
+## Operação de revisões
+
+A tela **Operação de revisões** transforma fila, calendário e histórico em indicadores de execução.
+
+Ela apresenta:
+
+- cumprimento em 7, 14 ou 30 dias;
+- revisões concluídas no período;
+- atrasos abertos;
+- carga dos próximos sete dias;
+- capacidade semanal por responsável;
+- estados saudável, atenção, sobrecarregado e sem dono;
+- rotina operacional diária;
+- snapshots históricos de cumprimento;
+- relatório Markdown da operação.
+
+O cálculo utilizado é:
+
+```text
+cumprimento =
+revisões concluídas
+÷
+(revisões concluídas + revisões atrasadas abertas)
+```
+
+A capacidade é uma premissa configurável e não representa automaticamente horas ou produtividade. Os snapshots começam a formar a série histórica a partir da v0.5.3.
+
+Guia: [`docs/REVIEW_OPERATIONS.md`](docs/REVIEW_OPERATIONS.md).
+
 ## Importação de dados
 
 A tela **Importar dados** aceita arquivos de até 8 MB e processa até 20.000 linhas no navegador. Reconhece separadores comuns, BOM, valores monetários pt-BR e cabeçalhos em português ou inglês.
@@ -136,7 +169,7 @@ Guias:
 
 ## Backup e sincronização
 
-O backup da v0.5.2 contém:
+O backup da v0.5.3 contém:
 
 ```text
 analyses
@@ -158,6 +191,9 @@ trendQueueSettings
 trendOwners
 trendCalendarSettings
 trendAlertState
+trendOperationalSettings
+trendComplianceSnapshots
+trendRoutineRuns
 ```
 
 Backups antigos continuam compatíveis. Os mesmos campos entram no workspace sincronizado, sem nova migration, pois o estado é armazenado como JSON versionado.
@@ -195,10 +231,13 @@ Guia: [`docs/AUTOMATED_ACTIVATION.md`](docs/AUTOMATED_ACTIVATION.md).
 - Revisar uma fonte não comprova que a informação esteja correta.
 - Adiar uma revisão não renova a validade da evidência.
 - Reagendar no calendário não atualiza a observação da fonte.
+- Cumprimento mede execução registrada, não qualidade da revisão.
+- Capacidade semanal é uma premissa operacional, não produtividade garantida.
+- Snapshots representam o momento da captura e não recriam o passado.
 - Notificações locais não funcionam com o aplicativo totalmente fechado.
 - A qualidade dos resultados depende das fontes e dados informados.
 - Projeções não garantem venda, lucro ou liquidez.
-- A ferramenta não substitui contabilidade, apuração fiscal, conciliação bancária, análise de crédito ou aconselhamento financeiro.
+- A ferramenta não substitui contabilidade, apuração fiscal, conciliação bancária, análise de crédito, gestão de pessoas ou aconselhamento financeiro.
 - Não há conexão OAuth direta com marketplaces nesta versão.
 
 ## Publicação
@@ -211,7 +250,7 @@ A `main` é publicada automaticamente pelo GitHub Pages.
 
 ## Roadmap
 
-- v0.5.3: indicadores de cumprimento, carga por responsável e rotina de revisão.
+- v0.5.4: metas de SLA, tendências operacionais e fechamento semanal da equipe.
 - v0.6: recomendações com evidências e ranking temporal.
 - v1.0: inteligência de mercado e recomendações assistidas.
 
