@@ -1,0 +1,82 @@
+name: Validar radar de tendências
+
+on:
+  pull_request:
+    paths:
+      - 'trend-radar.js'
+      - 'trend-radar.css'
+      - 'data.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/TREND_RADAR.md'
+      - '.github/workflows/validate-trend-radar.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-trend-radar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe
+        run: |
+          node --check trend-radar.js
+          node --check data.js
+          node --check sw.js
+
+      - name: Testar score, validade, agrupamento e importação
+        run: |
+          node <<'NODE'
+          global.window=undefined;
+          global.document=undefined;
+          require('./trend-radar.js');
+          const api=global.CommerceRadarTrends;
+          if(!api)throw new Error('API de tendências não inicializada');
+          const rows=[
+            {topic:'Organizador de cabos',category:'tecnologia',sourceType:'search',sourceName:'Busca',observedAt:'2026-07-20',validDays:30,growth:5,demand:4,competition:4,margin:3,risk:2,confidence:4,evidence:'Interesse crescente'},
+            {topic:'Organizador de cabos',category:'tecnologia',sourceType:'marketplace',sourceName:'Marketplace',observedAt:'2026-07-22',validDays:30,growth:4,demand:5,competition:4,margin:4,risk:2,confidence:5,evidence:'Vendas recorrentes'},
+            {topic:'Produto contraditório',category:'outros',sourceType:'search',sourceName:'Fonte A',observedAt:'2026-07-22',validDays:30,growth:5,demand:5,competition:3,margin:3,risk:3,confidence:3},
+            {topic:'Produto contraditório',category:'outros',sourceType:'community',sourceName:'Fonte B',observedAt:'2026-07-22',validDays:30,growth:1,demand:1,competition:3,margin:3,risk:3,confidence:3},
+            {topic:'Produto velho',category:'outros',sourceType:'other',sourceName:'Antiga',observedAt:'2025-01-01',validDays:30,growth:5,demand:5,competition:1,margin:5,risk:1,confidence:5}
+          ];
+          const aggregates=api.aggregateSignals(rows,'2026-07-26');
+          const cables=aggregates.find(item=>item.topic==='Organizador de cabos');
+          if(!cables||cables.sources!==2||cables.activeSignals!==2)throw new Error('Agrupamento por fontes inválido');
+          if(!['Promissor','Em alta'].includes(cables.status))throw new Error(`Status inesperado: ${cables.status}`);
+          const contradiction=aggregates.find(item=>item.topic==='Produto contraditório');
+          if(!contradiction?.contradiction)throw new Error('Contradição não detectada');
+          const expired=aggregates.find(item=>item.topic==='Produto velho');
+          if(expired?.status!=='Vencido'||!expired.allExpired)throw new Error('Validade temporal inválida');
+          const csv='topico;categoria;tipo_fonte;fonte;observado_em;validade_dias;crescimento;demanda;concorrencia;margem;risco;confianca;evidencia\nSuporte celular;creator;social;Rede;2026-07-26;15;5;4;4;3;2;4;Sinal crescente';
+          const imported=api.importSignals(csv);
+          if(imported.length!==1||imported[0].topic!=='Suporte celular'||imported[0].evidence!=='Sinal crescente')throw new Error('Importação CSV inválida');
+          const opportunity=api.aggregateToOpportunity(cables);
+          const test=api.aggregateToTest(cables);
+          if(!opportunity.custom||opportunity.score!==cables.score||test.stage!=='research')throw new Error('Conversão operacional inválida');
+          console.log('Score, validade, contradição, importação e conversões válidos.');
+          NODE
+
+      - name: Validar integração, backup, nuvem e PWA
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const code=fs.readFileSync('trend-radar.js','utf8');
+          const css=fs.readFileSync('trend-radar.css','utf8');
+          const data=fs.readFileSync('data.js','utf8');
+          const sw=fs.readFileSync('sw.js','utf8');
+          const docs=fs.readFileSync('docs/TREND_RADAR.md','utf8');
+          const version=fs.readFileSync('VERSION','utf8').trim();
+          for(const marker of ['Radar de tendências','trendSignals','trendSettings',"version: '0.5.0'",'Sinais contraditórios','Tehkné Solutions'])if(!code.includes(marker))throw new Error(`Marcador ausente: ${marker}`);
+          for(const asset of ['./trend-radar.css','./trend-radar.js']){if(!data.includes(asset))throw new Error(`Loader ausente: ${asset}`);if(!sw.includes(asset))throw new Error(`Cache offline ausente: ${asset}`)}
+          if(data.indexOf('./trend-radar.js')<data.indexOf('./financial-planning.js'))throw new Error('Radar de tendências deve carregar após planejamento financeiro');
+          if(!css.includes('.trendSummary')||!css.includes('.trendCard')||css.length<3000)throw new Error('Estilos do radar incompletos');
+          if(version!=='0.5.0')throw new Error(`Versão incorreta: ${version}`);
+          if(!sw.includes('commerce-radar-v15'))throw new Error('Cache PWA não foi atualizado');
+          for(const marker of ['Validade temporal','Score do sinal','Agrupamento de evidências','Transformação em operação','Limitações'])if(!docs.includes(marker))throw new Error(`Documentação incompleta: ${marker}`);
+          console.log('Integração, backup, nuvem, documentação e PWA válidos.');
+          NODE
