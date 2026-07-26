@@ -1,0 +1,81 @@
+name: Validar metas e projeção de caixa
+
+on:
+  pull_request:
+    paths:
+      - 'financial-planning.js'
+      - 'financial-planning.css'
+      - 'financial-close.js'
+      - 'data.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/FINANCIAL_PLANNING.md'
+      - '.github/workflows/validate-financial-planning.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-financial-planning:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe
+        run: |
+          node --check financial-planning.js
+          node --check data.js
+          node --check sw.js
+
+      - name: Testar ponto de equilíbrio, capital e fluxo
+        run: |
+          node <<'NODE'
+          global.window=undefined;
+          global.document=undefined;
+          global.localStorage={getItem:()=>null,setItem:()=>{}};
+          require('./financial-close.js');
+          require('./financial-planning.js');
+          const api=global.CommerceRadarFinancialPlanning;
+          if(!api)throw new Error('API de planejamento não inicializada');
+          const audits=[{id:'a1',channel:'Mercado Livre',periodStart:'2026-06-01',periodEnd:'2026-06-30',quality:'real',orders:10,grossRevenue:1000,productCost:400,marketplaceFees:100,paymentFees:20,shippingCost:80,shippingSubsidy:20,taxes:60,advertising:100,packaging:30,otherCosts:10}];
+          const base=api.summarizeBaseline(audits,[],'2026-06-01','2026-06-30','all');
+          const near=(actual,expected,t=.001)=>{if(Math.abs(actual-expected)>t)throw new Error(`Esperado ${expected}, recebido ${actual}`)};
+          near(base.monthlyRevenue,1000); near(base.variableCostRatio,.78); near(base.contributionMarginRatio,.22);
+          near(api.breakEvenRevenue(220,.22),1000);
+          const capital=api.capitalRequirement({monthlyRevenue:1000,fixedCosts:220,payoutDelayDays:15,inventoryDays:30,reserveMonths:1,safetyPct:5},base);
+          near(capital.inventoryCapital,400); near(capital.settlementGap,190); near(capital.fixedReserve,220); near(capital.safetyReserve,50); near(capital.total,860);
+          const receipts=api.scheduleReceipts([1000,1000,1000],15); near(receipts[0],500); near(receipts[1],1000); near(receipts[2],1000);
+          const plan={months:3,openingCash:500,fixedCosts:220,targetRevenue:1000,payoutDelayDays:15,inventoryDays:30,reserveMonths:1,safetyPct:5,conservativePct:80,optimisticPct:125};
+          const results=api.projectAll(plan,base);
+          if(results.length!==3)throw new Error('Três cenários não foram gerados');
+          const conservative=results.find(item=>item.scenario.id==='conservative');
+          const likely=results.find(item=>item.scenario.id==='likely');
+          const optimistic=results.find(item=>item.scenario.id==='optimistic');
+          if(!(conservative.totalProfit<likely.totalProfit&&likely.totalProfit<optimistic.totalProfit))throw new Error('Ordenação dos cenários inválida');
+          near(likely.breakEvenRevenue,1000); near(likely.requiredOpeningCash,860);
+          if(likely.monthlyRows.length!==3)throw new Error('Horizonte mensal inválido');
+          console.log('Ponto de equilíbrio, capital, cenários e fluxo válidos.');
+          NODE
+
+      - name: Validar integração, backup, nuvem e PWA
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const code=fs.readFileSync('financial-planning.js','utf8');
+          const css=fs.readFileSync('financial-planning.css','utf8');
+          const data=fs.readFileSync('data.js','utf8');
+          const sw=fs.readFileSync('sw.js','utf8');
+          const docs=fs.readFileSync('docs/FINANCIAL_PLANNING.md','utf8');
+          const version=fs.readFileSync('VERSION','utf8').trim();
+          for(const marker of ['Metas, orçamento e projeção de caixa','financialPlans',"version: '0.4.5'",'Ponto de equilíbrio','Tehkné Solutions'])if(!code.includes(marker))throw new Error(`Marcador ausente: ${marker}`);
+          for(const asset of ['./financial-planning.css','./financial-planning.js']){if(!data.includes(asset))throw new Error(`Loader ausente: ${asset}`);if(!sw.includes(asset))throw new Error(`Cache offline ausente: ${asset}`)}
+          if(data.indexOf('./financial-planning.js')<data.indexOf('./financial-close.js'))throw new Error('Planejamento deve carregar depois do fechamento');
+          if(!css.includes('.fpScenarioGrid')||!css.includes('.fpTable')||css.length<2000)throw new Error('Estilos do planejamento incompletos');
+          if(version!=='0.4.5')throw new Error(`Versão incorreta: ${version}`);
+          if(!sw.includes('commerce-radar-v14'))throw new Error('Cache não foi atualizado');
+          for(const marker of ['Ponto de equilíbrio','Capital de giro','Cenários','Prazo de repasse','Fluxo mensal'])if(!docs.includes(marker))throw new Error(`Documentação incompleta: ${marker}`);
+          console.log('Integração, backup, nuvem, documentação e PWA válidos.');
+          NODE

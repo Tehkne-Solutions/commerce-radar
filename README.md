@@ -1,8 +1,8 @@
 # Commerce Radar — Tehkné Solutions
 
-Produto web para ajudar empreendedores a decidir **o que vender, onde vender, como validar e se a operação realmente gera lucro**.
+Produto web para ajudar empreendedores a decidir **o que vender, onde vender, como validar, quanto capital será necessário e se a operação realmente gera caixa**.
 
-## MVP 0.4.4
+## MVP 0.4.5
 
 - Radar com 20 oportunidades iniciais.
 - Cadastro de oportunidades próprias.
@@ -15,6 +15,8 @@ Produto web para ajudar empreendedores a decidir **o que vender, onde vender, co
 - Fechamento financeiro por período.
 - Comparação de canais e evolução mensal da margem.
 - Controle de repasses pendentes, parciais, recebidos e contestados.
+- Metas, orçamento, ponto de equilíbrio e projeção de caixa.
+- Cenários conservador, provável e otimista.
 - Backup, restauração, histórico e sincronização opcional.
 - Provisionamento automatizado do Supabase.
 - PWA e modo local preservados.
@@ -51,6 +53,7 @@ Descobrir oportunidade
 → reconciliar pedidos
 → controlar repasses
 → fechar o período
+→ projetar metas e caixa
 ```
 
 ## Importação de dados
@@ -120,9 +123,28 @@ Controles de repasse podem ser criados manualmente ou gerados a partir dos lotes
 
 Guia: [`docs/PERIOD_CLOSE.md`](docs/PERIOD_CLOSE.md).
 
+## Metas, orçamento e projeção de caixa
+
+A tela **Metas e caixa** usa as auditorias do período-base para calcular:
+
+- receita e pedidos mensalizados;
+- margem de contribuição;
+- ponto de equilíbrio;
+- capital para cobertura de estoque;
+- necessidade causada pelo intervalo até o repasse;
+- reserva de custos fixos;
+- margem de segurança;
+- fluxo mensal de recebimentos e saídas;
+- déficit máximo e caixa final;
+- cenários conservador, provável e otimista.
+
+O usuário informa meta mensal, custos fixos, caixa inicial, prazo de repasse, cobertura de estoque, reserva e horizonte da projeção. Receitas são deslocadas entre os meses conforme o prazo informado, permitindo distinguir lucro contábil de disponibilidade real de caixa.
+
+Guia: [`docs/FINANCIAL_PLANNING.md`](docs/FINANCIAL_PLANNING.md).
+
 ## Backup e sincronização
 
-O backup da v0.4.4 contém:
+O backup da v0.4.5 contém:
 
 ```text
 analyses
@@ -135,6 +157,7 @@ financialProfiles
 reconciliationBatches
 payoutControls
 periodClosings
+financialPlans
 ```
 
 Backups antigos continuam compatíveis. Os mesmos campos entram no workspace sincronizado, sem nova migration, pois o estado é armazenado como JSON versionado.
@@ -171,7 +194,8 @@ Guia: [`docs/AUTOMATED_ACTIVATION.md`](docs/AUTOMATED_ACTIVATION.md).
 - Cabeçalhos e relatórios de marketplaces podem mudar.
 - Um lote pode misturar ajustes de períodos diferentes.
 - O valor informado por um canal não comprova recebimento bancário.
-- A ferramenta não substitui contabilidade, apuração fiscal ou conciliação bancária.
+- Projeções dependem das premissas e não garantem venda, lucro ou liquidez.
+- A ferramenta não substitui contabilidade, apuração fiscal, conciliação bancária, análise de crédito ou aconselhamento financeiro.
 - Não há conexão OAuth direta com marketplaces nesta versão.
 
 ## Publicação
@@ -184,8 +208,8 @@ A `main` é publicada automaticamente pelo GitHub Pages.
 
 ## Roadmap
 
-- v0.4.5: metas, orçamento e projeção de caixa.
 - v0.5: atualização assistida de tendências e catálogo.
+- v0.6: recomendações com evidências e ranking temporal.
 - v1.0: inteligência de mercado e recomendações assistidas.
 
 ## Assinatura

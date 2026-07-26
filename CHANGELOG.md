@@ -1,5 +1,47 @@
 # Changelog — Commerce Radar
 
+## 0.4.5 — Metas, Orçamento e Projeção de Caixa
+
+### Adicionado
+
+- Área **Metas e caixa**.
+- Receita mensalizada a partir do período-base.
+- Margem de contribuição e ponto de equilíbrio.
+- Capital de giro separado em estoque, intervalo de repasse, reserva fixa e segurança.
+- Fluxo mensal de caixa com recebimentos deslocados pelo prazo do canal.
+- Cenários conservador, provável e otimista.
+- Crescimento mensal configurável.
+- Alertas de margem insuficiente, meta abaixo do equilíbrio, déficit de caixa e baixa confiança dos dados.
+- Planos salvos com snapshots e exportação Markdown.
+- `financialPlans` no backup e no workspace sincronizado.
+- Documentação em `docs/FINANCIAL_PLANNING.md`.
+- Workflow específico para fórmulas e integração.
+
+### Compatibilidade
+
+- Sem nova migration do Supabase.
+- Backups antigos permanecem válidos.
+- PWA atualizado para cache offline dos novos módulos.
+
+## 0.4.4 — Fechamento Financeiro por Período
+
+### Adicionado
+
+- Consolidação de auditorias por período e canal.
+- Comparação entre canais e evolução mensal da margem.
+- Controle de repasses esperados, informados, recebidos, pendentes e atrasados.
+- Identificação de recebimentos parciais e contestações.
+- Snapshots de fechamentos em aberto, revisão ou fechados.
+- Exportação de relatórios em Markdown.
+- Inclusão de `payoutControls` e `periodClosings` no backup e na sincronização.
+- Documentação em `docs/PERIOD_CLOSE.md`.
+
+### Compatibilidade
+
+- Não exige nova migration do Supabase.
+- Backups anteriores continuam compatíveis.
+- PWA atualizado com os novos módulos.
+
 ## 0.4.3 — Reconciliação por Pedido
 
 ### Adicionado
@@ -152,7 +194,7 @@
 - Restauração de versão antiga como nova revisão.
 - Detecção de conflito quando outro dispositivo publica primeiro.
 - Resolução por versão remota, mesclagem ou preservação local.
-- Suspensão da sincronização automática enquanto o conflito estiver pendente.
+- Suspensão da sincronização automática enquanto houver conflito pendente.
 
 ### Segurança
 

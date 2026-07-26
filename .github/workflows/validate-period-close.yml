@@ -38,7 +38,6 @@ jobs:
           require('./financial-close.js');
           const api = global.CommerceRadarPeriodClose;
           if (!api) throw new Error('API de fechamento não inicializada');
-
           const audits = [
             {id:'a1',channel:'Mercado Livre',periodStart:'2026-06-01',periodEnd:'2026-06-30',quality:'real',orders:10,units:10,grossRevenue:1000,discounts:50,productCost:400,marketplaceFees:120,paymentFees:20,shippingCost:80,shippingSubsidy:20,taxes:60,advertising:100,packaging:30,otherCosts:10},
             {id:'a2',channel:'Shopee',periodStart:'2026-06-01',periodEnd:'2026-06-30',quality:'partial',orders:5,units:5,grossRevenue:500,refunds:50,productCost:200,marketplaceFees:60,paymentFees:10,shippingCost:40,taxes:30,advertising:30,packaging:15,otherCosts:5},
@@ -82,7 +81,7 @@ jobs:
           for(const asset of ['./financial-close.css','./financial-close.js']){if(!data.includes(asset))throw new Error(`Loader ausente: ${asset}`);if(!sw.includes(asset))throw new Error(`Cache offline ausente: ${asset}`)}
           if(data.indexOf('./financial-close.js')<data.indexOf('./financial-reconciliation.js'))throw new Error('Fechamento deve carregar depois da reconciliação');
           if(!css.includes('.closeSummary')||!css.includes('.payoutCard')||css.length<2500)throw new Error('Estilos de fechamento incompletos');
-          if(version!=='0.4.4')throw new Error(`Versão incorreta: ${version}`);
+          const parts=version.split('.').map(Number); if(parts.length!==3||parts[0]!==0||parts[1]<4||(parts[1]===4&&parts[2]<4))throw new Error(`Versão anterior à 0.4.4: ${version}`);
           for(const marker of ['Comparação entre canais','Evolução da margem','Controle de repasses','Fechamentos salvos'])if(!docs.includes(marker))throw new Error(`Documentação incompleta: ${marker}`);
           console.log('Integração, backup, nuvem, documentação e PWA válidos.');
           NODE
