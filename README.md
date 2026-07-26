@@ -1,10 +1,12 @@
 # Commerce Radar — Tehkné Solutions
 
-Produto web para ajudar empreendedores a decidir **o que vender, onde vender, como validar, quanto capital será necessário e se a operação realmente gera caixa**.
+Produto web para ajudar empreendedores a identificar sinais, decidir **o que vender, onde vender, como validar, quanto capital será necessário e se a operação realmente gera caixa**.
 
-## MVP 0.4.5
+## MVP 0.5.0
 
 - Radar com 20 oportunidades iniciais.
+- Radar de tendências com fontes, validade e confiança.
+- Agrupamento de evidências, contradições e ranking temporal.
 - Cadastro de oportunidades próprias.
 - Score, margem, preço mínimo e ranking de canais.
 - Kanban de experimentos e planos de lançamento.
@@ -44,7 +46,9 @@ Acesse `http://localhost:4173`.
 ## Fluxo do produto
 
 ```text
-Descobrir oportunidade
+Registrar sinais e fontes
+→ priorizar tendências
+→ criar oportunidade
 → analisar
 → comparar canais
 → testar
@@ -55,6 +59,28 @@ Descobrir oportunidade
 → fechar o período
 → projetar metas e caixa
 ```
+
+## Radar de tendências
+
+A tela **Radar de tendências** registra sinais com:
+
+- produto ou tema;
+- categoria;
+- tipo, nome e URL da fonte;
+- geografia e período analisado;
+- data de observação e validade;
+- crescimento, demanda, concorrência, margem, risco e confiança;
+- evidência textual e observações.
+
+O score pondera crescimento, demanda, margem potencial, concorrência invertida, risco invertido, confiança, frescor e qualidade do tipo de fonte.
+
+Sinais do mesmo tema são agrupados. Fontes diferentes aumentam a confirmação, enquanto avaliações muito divergentes geram o aviso **Sinais contraditórios**. Evidências vencidas deixam de aparecer por padrão, mas permanecem auditáveis.
+
+Uma tendência pode gerar uma oportunidade própria ou um teste no estágio de pesquisa. Também é possível importar e exportar os sinais em CSV.
+
+O módulo não consulta nem raspa fontes automaticamente. Interesse e popularidade não comprovam intenção de compra.
+
+Guia: [`docs/TREND_RADAR.md`](docs/TREND_RADAR.md).
 
 ## Importação de dados
 
@@ -144,7 +170,7 @@ Guia: [`docs/FINANCIAL_PLANNING.md`](docs/FINANCIAL_PLANNING.md).
 
 ## Backup e sincronização
 
-O backup da v0.4.5 contém:
+O backup da v0.5.0 contém:
 
 ```text
 analyses
@@ -158,6 +184,8 @@ reconciliationBatches
 payoutControls
 periodClosings
 financialPlans
+trendSignals
+trendSettings
 ```
 
 Backups antigos continuam compatíveis. Os mesmos campos entram no workspace sincronizado, sem nova migration, pois o estado é armazenado como JSON versionado.
@@ -182,6 +210,7 @@ Guia: [`docs/AUTOMATED_ACTIVATION.md`](docs/AUTOMATED_ACTIVATION.md).
 - O modo local não transmite dados.
 - Arquivos são processados no navegador.
 - CSVs brutos não são armazenados no histórico.
+- URLs e evidências de tendência só são armazenadas quando informadas pelo usuário.
 - PAT e senha do banco ficam somente em GitHub Secrets.
 - Escritas na nuvem passam por RPC versionado.
 - Cada usuário acessa somente os próprios registros por RLS.
@@ -190,7 +219,10 @@ Guia: [`docs/AUTOMATED_ACTIVATION.md`](docs/AUTOMATED_ACTIVATION.md).
 ## Limitações
 
 - O catálogo contém hipóteses, não retorno garantido.
-- A qualidade dos resultados depende dos dados importados.
+- Tendência, busca e popularidade não comprovam venda.
+- A qualidade dos resultados depende das fontes e dados informados.
+- Duas fontes podem repetir a mesma origem primária.
+- Sinais podem ser sazonais, manipulados ou efêmeros.
 - Cabeçalhos e relatórios de marketplaces podem mudar.
 - Um lote pode misturar ajustes de períodos diferentes.
 - O valor informado por um canal não comprova recebimento bancário.
@@ -208,7 +240,7 @@ A `main` é publicada automaticamente pelo GitHub Pages.
 
 ## Roadmap
 
-- v0.5: atualização assistida de tendências e catálogo.
+- v0.5.1: fila de atualização de fontes e revisão em lote.
 - v0.6: recomendações com evidências e ranking temporal.
 - v1.0: inteligência de mercado e recomendações assistidas.
 
