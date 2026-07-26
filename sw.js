@@ -1,5 +1,5 @@
-const CACHE = 'commerce-radar-v13';
-const ASSETS = ['./', './index.html', './styles.css', './v021.css', './cloud.css', './cloud-diagnostics.css', './cloud-history.css', './import.css', './marketplace-adapters.css', './financial-audit.css', './financial-reconciliation.css', './financial-close.css', './data.js', './app.js', './v021.js', './cloud-config.js', './cloud.js', './cloud-bootstrap.js', './cloud-diagnostics.js', './cloud-history.js', './marketplace-adapters.js', './import.js', './financial-audit.js', './financial-reconciliation.js', './financial-close.js', './manifest.webmanifest'];
+const CACHE = 'commerce-radar-v14';
+const ASSETS = ['./', './index.html', './styles.css', './v021.css', './cloud.css', './cloud-diagnostics.css', './cloud-history.css', './import.css', './marketplace-adapters.css', './financial-audit.css', './financial-reconciliation.css', './financial-close.css', './financial-planning.css', './data.js', './app.js', './v021.js', './cloud-config.js', './cloud.js', './cloud-bootstrap.js', './cloud-diagnostics.js', './cloud-history.js', './marketplace-adapters.js', './import.js', './financial-audit.js', './financial-reconciliation.js', './financial-close.js', './financial-planning.js', './manifest.webmanifest'];
 
 self.addEventListener('install', event => {
   self.skipWaiting();
