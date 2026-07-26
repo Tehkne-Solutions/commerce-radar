@@ -1,0 +1,98 @@
+name: Validar calendário de revisões
+
+on:
+  pull_request:
+    paths:
+      - 'trend-calendar.js'
+      - 'trend-calendar.css'
+      - 'trend-queue.js'
+      - 'trend-radar.js'
+      - 'cloud-bootstrap.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/REVIEW_CALENDAR.md'
+      - '.github/workflows/validate-review-calendar.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-review-calendar:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe
+        run: |
+          node --check trend-radar.js
+          node --check trend-queue.js
+          node --check trend-calendar.js
+          node --check cloud-bootstrap.js
+          node --check sw.js
+
+      - name: Testar calendário, responsáveis e alertas
+        run: |
+          node <<'NODE'
+          const store=new Map();
+          global.window=undefined;
+          global.document=undefined;
+          global.localStorage={getItem:key=>store.has(key)?store.get(key):null,setItem:(key,value)=>store.set(key,String(value))};
+          require('./trend-radar.js');
+          require('./trend-queue.js');
+          require('./trend-calendar.js');
+          const api=global.CommerceRadarReviewCalendar;
+          if(!api)throw new Error('API do calendário não inicializada');
+          const signals=[
+            {id:'late',topic:'Produto atrasado',sourceType:'search',sourceName:'Busca',observedAt:'2026-06-01',validDays:30,expiresAt:'2026-07-25',growth:4,demand:4,competition:3,margin:3,risk:2,confidence:2},
+            {id:'soon',topic:'Produto próximo',sourceType:'marketplace',sourceName:'Canal',observedAt:'2026-07-20',validDays:30,expiresAt:'2026-08-19',growth:4,demand:4,competition:3,margin:4,risk:2,confidence:4},
+            {id:'future',topic:'Produto futuro',sourceType:'internal',sourceName:'Interno',observedAt:'2026-07-25',validDays:60,expiresAt:'2026-09-23',growth:3,demand:3,competition:3,margin:3,risk:3,confidence:5}
+          ];
+          const metadata=[
+            {signalId:'late',owner:'owner-1',priority:'high',state:'pending'},
+            {signalId:'soon',nextReviewAt:'2026-07-29',priority:'medium',state:'reviewing'}
+          ];
+          const owners=[{id:'owner-1',name:'Ana',email:'ana@example.com',active:true}];
+          const events=api.buildEvents(signals,metadata,owners,'2026-07-26');
+          if(events.length!==3)throw new Error('Eventos não foram gerados');
+          if(events.find(item=>item.id==='late').ownerName!=='Ana')throw new Error('Responsável não foi resolvido');
+          const month=api.buildCalendar(events,'2026-07-26','month');
+          const week=api.buildCalendar(events,'2026-07-26','week');
+          if(month.days.length!==42)throw new Error('Grade mensal inválida');
+          if(week.days.length!==7||week.start!=='2026-07-20')throw new Error('Grade semanal inválida');
+          const alerts=api.buildAlerts(events,{leadDays:7},{dismissed:{}},'2026-07-26');
+          if(alerts.length!==2||alerts[0].id!=='late')throw new Error('Alertas ou ordenação inválidos');
+          store.set(api.K.signals,JSON.stringify(signals));
+          store.set(api.K.queue,JSON.stringify(metadata));
+          api.assignOwner('soon','owner-1','Atribuição de teste');
+          let saved=JSON.parse(store.get(api.K.queue)).find(item=>item.signalId==='soon');
+          if(saved.owner!=='owner-1')throw new Error('Atribuição não foi salva');
+          api.scheduleReview('soon','2026-08-03',{owner:'owner-1',priority:'high',state:'pending',note:'Reagendamento de teste'});
+          saved=JSON.parse(store.get(api.K.queue)).find(item=>item.signalId==='soon');
+          if(saved.nextReviewAt!=='2026-08-03'||saved.priority!=='high')throw new Error('Reagendamento não foi salvo');
+          const history=JSON.parse(store.get('tehkne-commerce-radar-v51-signal-history'));
+          if(history.length<2)throw new Error('Histórico de atribuição e agenda ausente');
+          console.log('Calendário, responsáveis, alertas e agenda válidos.');
+          NODE
+
+      - name: Validar integração, backup, nuvem e PWA
+        run: |
+          node <<'NODE'
+          const fs=require('fs');
+          const code=fs.readFileSync('trend-calendar.js','utf8');
+          const css=fs.readFileSync('trend-calendar.css','utf8');
+          const bootstrap=fs.readFileSync('cloud-bootstrap.js','utf8');
+          const sw=fs.readFileSync('sw.js','utf8');
+          const docs=fs.readFileSync('docs/REVIEW_CALENDAR.md','utf8');
+          const version=fs.readFileSync('VERSION','utf8').trim();
+          for(const marker of ['Calendário de revisões','trendOwners','trendCalendarSettings','trendAlertState',"version: '0.5.2'",'Tehkné Solutions'])if(!code.includes(marker))throw new Error(`Marcador ausente: ${marker}`);
+          for(const asset of ['./trend-calendar.css','./trend-calendar.js']){if(!bootstrap.includes(asset))throw new Error(`Bootstrap ausente: ${asset}`);if(!sw.includes(asset))throw new Error(`Cache offline ausente: ${asset}`)}
+          if(!bootstrap.includes('CommerceRadarTrendQueue'))throw new Error('Calendário deve aguardar a fila de fontes');
+          if(!css.includes('.tcSummary')||!css.includes('.tcCalendar')||css.length<3000)throw new Error('Estilos do calendário incompletos');
+          if(version!=='0.5.2')throw new Error(`Versão incorreta: ${version}`);
+          if(!sw.includes('commerce-radar-v17'))throw new Error('Cache PWA não foi atualizado');
+          for(const marker of ['Responsáveis','Calendário mensal e semanal','Alertas dentro do aplicativo','Notificações do navegador','Backup e sincronização'])if(!docs.includes(marker))throw new Error(`Documentação incompleta: ${marker}`);
+          console.log('Integração, backup, nuvem, documentação e PWA válidos.');
+          NODE
