@@ -21,12 +21,15 @@ jobs:
           node --check app.js
           node --check data.js
           node --check v021.js
+          node --check cloud-config.js
+          node --check cloud.js
           node --check sw.js
 
       - name: Validar catálogo
         run: |
           node <<'NODE'
           global.window = {};
+          global.document = undefined;
           require('./data.js');
           const data = window.COMMERCE_RADAR_DATA;
           if (!data) throw new Error('Catálogo não inicializado');
@@ -55,6 +58,42 @@ jobs:
           console.log('Módulo v0.2.1 contém cadastro, restauração, planos e assinatura.');
           NODE
 
+      - name: Validar conta e sincronização
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const cloud = fs.readFileSync('cloud.js', 'utf8');
+          const data = fs.readFileSync('data.js', 'utf8');
+          const config = fs.readFileSync('cloud-config.js', 'utf8');
+          const sql = fs.readFileSync('docs/supabase.sql', 'utf8');
+          const sw = fs.readFileSync('sw.js', 'utf8');
+
+          const cloudMarkers = [
+            '/auth/v1/signup',
+            'grant_type=password',
+            'grant_type=refresh_token',
+            'resolution=merge-duplicates',
+            'Mesclar dispositivo e nuvem',
+            "version:'0.3.0'",
+            'tehkne-commerce-radar-cloud-session',
+            'Tehkné Solutions'
+          ];
+          for (const marker of cloudMarkers) {
+            if (!cloud.includes(marker)) throw new Error(`Marcador ausente no módulo v0.3: ${marker}`);
+          }
+
+          for (const asset of ['./cloud.css', './cloud-config.js', './cloud.js']) {
+            if (!data.includes(asset)) throw new Error(`Loader ausente em data.js: ${asset}`);
+            if (!sw.includes(asset)) throw new Error(`Asset ausente no cache offline: ${asset}`);
+          }
+
+          if (!config.includes("table:'commerce_radar_workspaces'")) throw new Error('Tabela padrão não configurada');
+          if (!sql.includes('enable row level security')) throw new Error('RLS não habilitada na migration');
+          if (!sql.includes('(select auth.uid()) = user_id')) throw new Error('Política por usuário ausente');
+          if (cloud.includes('service_role')) throw new Error('O frontend não pode conter service role');
+          console.log('Módulo v0.3 contém autenticação, sincronização, cache e RLS.');
+          NODE
+
       - name: Validar HTML, manifesto e referências
         run: |
           python <<'PY'
@@ -81,6 +120,7 @@ jobs:
           html = Path('index.html').read_text(encoding='utf-8')
           app = Path('app.js').read_text(encoding='utf-8')
           ext = Path('v021.js').read_text(encoding='utf-8')
+          cloud = Path('cloud.js').read_text(encoding='utf-8')
           parser = IdParser()
           parser.feed(html)
 
@@ -103,10 +143,14 @@ jobs:
               if marker not in ext:
                   raise SystemExit(f'Interface dinâmica ausente: {marker}')
 
+          for marker in ('cloudNav', 'cloudState', 'cloudPush', 'cloudPull', 'cloudMerge'):
+              if marker not in cloud:
+                  raise SystemExit(f'Interface de nuvem ausente: {marker}')
+
           manifest = json.loads(Path('manifest.webmanifest').read_text(encoding='utf-8'))
           for field in ('name', 'short_name', 'start_url', 'display'):
               if not manifest.get(field):
                   raise SystemExit(f'Campo ausente no manifesto: {field}')
 
-          print(f'HTML válido: {len(parser.ids)} IDs estáticos, scripts e estilos verificados.')
+          print(f'HTML válido: {len(parser.ids)} IDs estáticos, módulos dinâmicos e manifesto verificados.')
           PY
