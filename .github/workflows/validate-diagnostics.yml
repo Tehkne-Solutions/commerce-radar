@@ -1,0 +1,72 @@
+name: Validar diagnóstico de nuvem
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate-diagnostics:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe do diagnóstico
+        run: node --check cloud-diagnostics.js
+
+      - name: Validar integração e cache
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const diagnostic = fs.readFileSync('cloud-diagnostics.js', 'utf8');
+          const data = fs.readFileSync('data.js', 'utf8');
+          const sw = fs.readFileSync('sw.js', 'utf8');
+          const verify = fs.readFileSync('.github/workflows/verify-production.yml', 'utf8');
+          const required = [
+            'DIAGNÓSTICO ADMINISTRATIVO',
+            'Data API e RLS anônimo',
+            'Sessão autenticada',
+            'Workspace autenticado',
+            'PWA e modo offline',
+            "version:'0.3.2'",
+            'Tehkné Solutions'
+          ];
+          for (const marker of required) {
+            if (!diagnostic.includes(marker)) throw new Error(`Marcador ausente no diagnóstico: ${marker}`);
+          }
+          for (const asset of ['./cloud-diagnostics.css', './cloud-diagnostics.js']) {
+            if (!data.includes(asset)) throw new Error(`Loader ausente: ${asset}`);
+            if (!sw.includes(asset)) throw new Error(`Cache offline ausente: ${asset}`);
+          }
+          const workflowMarkers = [
+            'workflow_run',
+            'Provisionar Supabase',
+            'cloud-config.js',
+            'auth/v1/health',
+            'RLS não isolou',
+            'cloud-diagnostics.js',
+            'Tehkné Solutions'
+          ];
+          for (const marker of workflowMarkers) {
+            if (!verify.includes(marker)) throw new Error(`Marcador ausente na verificação de produção: ${marker}`);
+          }
+          console.log('Diagnóstico, loader, cache e verificação externa válidos.');
+          NODE
+
+      - name: Validar YAML dos workflows
+        run: |
+          python <<'PY'
+          import yaml
+          for path in (
+              '.github/workflows/validate-diagnostics.yml',
+              '.github/workflows/verify-production.yml',
+          ):
+              with open(path, encoding='utf-8') as file:
+                  yaml.safe_load(file)
+          print('Workflows YAML válidos.')
+          PY
