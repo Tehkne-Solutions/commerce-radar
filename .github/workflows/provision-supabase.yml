@@ -80,20 +80,17 @@ jobs:
             PROJECT_REF="$INPUT_REF"
           else
             test -n "$ORG_SLUG" || { echo 'Informe organization_slug para criar o projeto.'; exit 1; }
-
             BODY=$(jq -n \
               --arg name "$PROJECT_NAME" \
               --arg organization_slug "$ORG_SLUG" \
               --arg db_pass "$SUPABASE_DB_PASSWORD" \
               --arg region "$REGION" \
               '{name:$name,organization_slug:$organization_slug,db_pass:$db_pass,region:$region}')
-
             RESPONSE=$(curl --fail-with-body --silent --show-error \
               -X POST 'https://api.supabase.com/v1/projects' \
               -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
               -H 'Content-Type: application/json' \
               --data "$BODY")
-
             PROJECT_REF=$(jq -r '.ref // empty' <<<"$RESPONSE")
             test -n "$PROJECT_REF" || { echo 'A API não retornou o project ref.'; exit 1; }
           fi
@@ -101,7 +98,6 @@ jobs:
           [[ "$PROJECT_REF" =~ ^[a-z0-9]{20}$ ]] || { echo 'Project ref inválido.'; exit 1; }
           echo "project_ref=$PROJECT_REF" >> "$GITHUB_OUTPUT"
           echo "project_url=https://$PROJECT_REF.supabase.co" >> "$GITHUB_OUTPUT"
-          echo "Projeto resolvido: $PROJECT_REF"
 
       - name: Aguardar serviços saudáveis
         shell: bash
@@ -125,7 +121,7 @@ jobs:
           done
           [[ "$READY" == true ]] || { echo 'O projeto não ficou saudável dentro do limite.'; exit 1; }
 
-      - name: Aplicar migrations e RLS
+      - name: Aplicar migrations, histórico e RLS
         shell: bash
         env:
           PROJECT_REF: ${{ steps.project.outputs.project_ref }}
@@ -142,7 +138,6 @@ jobs:
           PROJECT_URL: ${{ steps.project.outputs.project_url }}
         run: |
           set -euo pipefail
-
           curl --fail-with-body --silent --show-error \
             -H "Authorization: Bearer $SUPABASE_ACCESS_TOKEN" \
             "https://api.supabase.com/v1/projects/$PROJECT_REF/api-keys?reveal=true" \
@@ -164,7 +159,6 @@ jobs:
           print(key)
           PY
           )
-
           test -n "$PUBLISHABLE_KEY" || { echo 'Nenhuma publishable/anon key foi encontrada.'; exit 1; }
           echo "::add-mask::$PUBLISHABLE_KEY"
 
@@ -172,18 +166,18 @@ jobs:
           import json, sys
           url, key = sys.argv[1:3]
           config = (
-              "window.COMMERCE_RADAR_CLOUD = {\n"
-              f"  url: {json.dumps(url)},\n"
-              f"  publishableKey: {json.dumps(key)},\n"
-              "  table: 'commerce_radar_workspaces'\n"
+              "window.COMMERCE_RADAR_CLOUD={\n"
+              f"  url:{json.dumps(url)},\n"
+              f"  publishableKey:{json.dumps(key)},\n"
+              "  table:'commerce_radar_workspaces',\n"
+              "  versionsTable:'commerce_radar_workspace_versions'\n"
               "};\n"
           )
           open('cloud-config.js', 'w', encoding='utf-8').write(config)
           PY
-
           echo "project_url=$PROJECT_URL" >> "$GITHUB_OUTPUT"
 
-      - name: Verificar Auth, Data API e RLS
+      - name: Verificar Auth, tabelas e RLS
         shell: bash
         env:
           PROJECT_URL: ${{ steps.project.outputs.project_url }}
@@ -203,15 +197,17 @@ jobs:
             -H "apikey: $PUBLISHABLE_KEY" \
             "$PROJECT_URL/auth/v1/health" >/dev/null
 
-          HTTP_CODE=$(curl --silent --show-error -o /tmp/workspaces.json -w '%{http_code}' \
-            -H "apikey: $PUBLISHABLE_KEY" \
-            "$PROJECT_URL/rest/v1/commerce_radar_workspaces?select=user_id&limit=1")
-          [[ "$HTTP_CODE" == "200" ]] || { cat /tmp/workspaces.json; exit 1; }
-          jq -e 'type == "array" and length == 0' /tmp/workspaces.json >/dev/null || {
-            echo 'A consulta anônima deveria retornar uma lista vazia protegida por RLS.'
-            cat /tmp/workspaces.json
-            exit 1
-          }
+          for TABLE in commerce_radar_workspaces commerce_radar_workspace_versions; do
+            HTTP_CODE=$(curl --silent --show-error -o "/tmp/$TABLE.json" -w '%{http_code}' \
+              -H "apikey: $PUBLISHABLE_KEY" \
+              "$PROJECT_URL/rest/v1/$TABLE?select=user_id&limit=1")
+            [[ "$HTTP_CODE" == "200" ]] || { cat "/tmp/$TABLE.json"; exit 1; }
+            jq -e 'type == "array" and length == 0' "/tmp/$TABLE.json" >/dev/null || {
+              echo "A consulta anônima em $TABLE deveria retornar uma lista vazia protegida por RLS."
+              cat "/tmp/$TABLE.json"
+              exit 1
+            }
+          done
 
       - name: Publicar configuração na main
         shell: bash
@@ -239,8 +235,8 @@ jobs:
             echo
             echo "- Project ref: \`$PROJECT_REF\`"
             echo "- Project URL: \`$PROJECT_URL\`"
-            echo '- Migration e políticas RLS aplicadas.'
+            echo '- Workspace, histórico, RPC e políticas RLS aplicados.'
             echo '- Chave pública adicionada ao `cloud-config.js`.'
             echo '- O push na main acionará o deploy do GitHub Pages.'
-            echo '- Abra o Commerce Radar, crie a conta e use **Ativar e enviar agora**.'
+            echo '- Abra o Commerce Radar, crie a conta e use **Criar conta e ativar agora**.'
           } >> "$GITHUB_STEP_SUMMARY"

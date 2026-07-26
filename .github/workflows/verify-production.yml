@@ -36,11 +36,13 @@ jobs:
           url = re.search(r"url:\s*['\"]([^'\"]+)", text)
           key = re.search(r"publishableKey:\s*['\"]([^'\"]+)", text)
           table = re.search(r"table:\s*['\"]([^'\"]+)", text)
+          versions = re.search(r"versionsTable:\s*['\"]([^'\"]+)", text)
           if not url or not key or not url.group(1) or not key.group(1):
               raise SystemExit('A nuvem ainda não foi provisionada em cloud-config.js.')
           print(f"project_url={url.group(1)}")
           print(f"publishable_key={key.group(1)}")
           print(f"table={table.group(1) if table else 'commerce_radar_workspaces'}")
+          print(f"versions_table={versions.group(1) if versions else 'commerce_radar_workspace_versions'}")
           PY
 
       - name: Aguardar GitHub Pages publicar a configuração
@@ -63,30 +65,39 @@ jobs:
           done
           [[ "$READY" == true ]] || { echo 'O GitHub Pages não publicou a configuração esperada.'; exit 1; }
 
-      - name: Testar Auth e isolamento anônimo
+      - name: Testar Auth, tabelas e isolamento anônimo
         shell: bash
         env:
           PROJECT_URL: ${{ steps.config.outputs.project_url }}
           PUBLISHABLE_KEY: ${{ steps.config.outputs.publishable_key }}
           TABLE: ${{ steps.config.outputs.table }}
+          VERSIONS_TABLE: ${{ steps.config.outputs.versions_table }}
         run: |
           set -euo pipefail
           echo "::add-mask::$PUBLISHABLE_KEY"
           curl --fail --silent --show-error -H "apikey: $PUBLISHABLE_KEY" "$PROJECT_URL/auth/v1/health" >/dev/null
-          CODE=$(curl --silent --show-error -o /tmp/anonymous.json -w '%{http_code}' -H "apikey: $PUBLISHABLE_KEY" "$PROJECT_URL/rest/v1/$TABLE?select=user_id&limit=1")
-          [[ "$CODE" == '200' ]] || { cat /tmp/anonymous.json; exit 1; }
-          jq -e 'type == "array" and length == 0' /tmp/anonymous.json >/dev/null || { echo 'RLS não isolou a consulta anônima.'; cat /tmp/anonymous.json; exit 1; }
+          for CURRENT_TABLE in "$TABLE" "$VERSIONS_TABLE"; do
+            CODE=$(curl --silent --show-error -o "/tmp/$CURRENT_TABLE.json" -w '%{http_code}' -H "apikey: $PUBLISHABLE_KEY" "$PROJECT_URL/rest/v1/$CURRENT_TABLE?select=user_id&limit=1")
+            [[ "$CODE" == '200' ]] || { cat "/tmp/$CURRENT_TABLE.json"; exit 1; }
+            jq -e 'type == "array" and length == 0' "/tmp/$CURRENT_TABLE.json" >/dev/null || {
+              echo "RLS não isolou a consulta anônima em $CURRENT_TABLE."
+              cat "/tmp/$CURRENT_TABLE.json"
+              exit 1
+            }
+          done
 
       - name: Testar assets essenciais em produção
         shell: bash
         run: |
           set -euo pipefail
           SITE='https://tehkne-solutions.github.io/commerce-radar'
-          for asset in index.html data.js cloud.js cloud-bootstrap.js cloud-diagnostics.js manifest.webmanifest; do
+          for asset in index.html data.js cloud.js cloud-bootstrap.js cloud-diagnostics.js cloud-history.js cloud-history.css manifest.webmanifest; do
             curl --fail --silent --show-error "$SITE/$asset" -o "/tmp/$asset"
           done
           grep -Fq 'Commerce Radar' /tmp/index.html
           grep -Fq 'DIAGNÓSTICO ADMINISTRATIVO' /tmp/cloud-diagnostics.js
+          grep -Fq 'Histórico e conflitos' /tmp/cloud-history.js
+          grep -Fq 'sync_commerce_radar_workspace' /tmp/cloud.js
 
       - name: Resumo
         shell: bash
@@ -98,9 +109,9 @@ jobs:
             echo
             echo '- GitHub Pages publicou a configuração atual.'
             echo "- Supabase Auth respondeu em \`$PROJECT_URL\`."
-            echo '- A Data API está acessível.'
-            echo '- A consulta anônima retornou uma lista vazia protegida por RLS.'
-            echo '- Os assets do diagnóstico administrativo estão disponíveis.'
+            echo '- Workspace atual e histórico estão acessíveis pela Data API.'
+            echo '- As duas consultas anônimas retornaram listas vazias protegidas por RLS.'
+            echo '- Os módulos de diagnóstico, histórico e conflito estão publicados.'
             echo
             echo '**Assinatura:** Tehkné Solutions'
           } >> "$GITHUB_STEP_SUMMARY"

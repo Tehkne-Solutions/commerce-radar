@@ -1,146 +1,73 @@
 # Changelog — Commerce Radar
 
-## 0.3.2 — Diagnóstico Administrativo
+## 0.3.3 — Histórico e Conflitos
 
 ### Adicionado
 
-- Painel de diagnóstico na tela **Conta e sincronização**.
-- Verificação de navegador, Fetch e LocalStorage.
-- Contagem dos dados locais disponíveis para sincronização.
-- Validação de Project URL, publishable key e tabela.
-- Teste do Supabase Auth.
-- Teste anônimo da Data API e do isolamento por RLS.
-- Validação da sessão autenticada e do workspace protegido.
-- Verificação do Service Worker e do modo offline.
-- Relatório copiável sem exposição de chaves, senhas ou tokens.
-- Links diretos para provisionamento e verificação externa.
-- Workflow `verify-production.yml` executado após o provisionamento ou manualmente.
-- Espera automática do deploy do GitHub Pages antes dos testes externos.
-- Verificação dos assets essenciais publicados.
-- Workflow independente para validar o módulo de diagnóstico.
+- Revisão incremental para cada workspace sincronizado.
+- Tabela `commerce_radar_workspace_versions` com histórico por usuário.
+- RPC atômico `sync_commerce_radar_workspace`.
+- Identificação persistente do dispositivo de origem.
+- Motivo da sincronização em cada revisão.
+- Painel com as 30 versões mais recentes.
+- Exportação de versões individuais em JSON.
+- Restauração de versão antiga como nova revisão.
+- Detecção de conflito quando outro dispositivo publica primeiro.
+- Resolução por versão remota, mesclagem ou preservação local.
+- Suspensão da sincronização automática enquanto o conflito estiver pendente.
 
 ### Segurança
 
-- O diagnóstico não realiza escrita ou exclusão no Supabase.
-- Chaves e tokens nunca aparecem no relatório.
-- A consulta anônima precisa retornar uma lista vazia para ser aprovada.
-- A verificação externa usa apenas a configuração pública já destinada ao navegador.
+- Escrita direta na tabela atual revogada para usuários autenticados.
+- Toda alteração passa pelo RPC com revisão esperada.
+- Bloqueio de linha no PostgreSQL durante a sincronização.
+- Limite de 5 MB por payload.
+- Histórico protegido por RLS e `auth.uid()`.
+- Restaurações e resoluções permanecem auditáveis.
 
 ### Compatibilidade
 
+- Workspaces existentes começam na revisão 0 e passam para a revisão 1 no primeiro envio versionado.
+- Dados, contas e backups das versões anteriores continuam válidos.
 - O modo local continua funcionando sem Supabase.
-- Relatórios ficam somente no navegador.
-- Workspaces, backups e contas anteriores continuam válidos.
+
+## 0.3.2 — Diagnóstico Administrativo
+
+- Painel de diagnóstico de navegador, configuração, Auth, Data API, RLS, sessão, workspace e PWA.
+- Relatório copiável sem credenciais ou tokens.
+- Workflow externo de verificação após o provisionamento.
+- Teste dos assets publicados no GitHub Pages.
 
 ## 0.3.1 — Ativação Automatizada
 
-### Adicionado
-
-- Workflow manual para usar um projeto Supabase existente ou criar um novo.
-- Espera automática do estado saudável do projeto.
-- Aplicação versionada de migrations com Supabase CLI.
-- Geração automática do `cloud-config.js` com URL e publishable key.
-- Teste automático de Auth, Data API e isolamento anônimo por RLS.
-- Commit automático da configuração pública na `main`.
-- Migration em `supabase/migrations` para uso por `supabase db push`.
+- Workflow para criar ou conectar um projeto Supabase.
+- Aplicação automática de migrations e RLS.
+- Geração e publicação do `cloud-config.js`.
 - Botão **Criar conta e ativar agora**.
-- Primeiro envio automático do workspace após criação ou login.
-- Continuação do envio após confirmação por e-mail.
-- Guia completo em `docs/AUTOMATED_ACTIVATION.md`.
-
-### Segurança
-
-- PAT do Supabase e senha do banco permanecem somente nos GitHub Secrets.
-- Nenhuma chave secreta ou service-role é enviada ao navegador.
-- A chave publicada é somente a publishable/anon key.
-- A consulta anônima é verificada para retornar uma lista vazia protegida por RLS.
-
-### Compatibilidade
-
-- O modo local continua funcionando sem configuração.
-- A ativação manual da versão 0.3 permanece disponível.
-- Os workspaces e backups anteriores continuam válidos.
+- Primeiro envio automático do workspace.
 
 ## 0.3.0 — Conta e Sincronização
 
-### Adicionado
-
-- Configuração opcional de projeto Supabase por arquivo ou pelo navegador.
-- Cadastro e login com e-mail e senha.
-- Persistência e renovação de sessão.
-- Envio do workspace local para a nuvem.
-- Download com substituição protegida por confirmação.
-- Mesclagem de análises, testes, oportunidades próprias e planos pelo identificador.
-- Sincronização automática opcional após alterações locais.
-- Indicadores de conta, última sincronização, estado e quantidade de itens locais.
-- Migration SQL para a tabela `commerce_radar_workspaces`.
-- Políticas RLS de leitura, criação, alteração e exclusão por usuário.
-
-### Alterado
-
-- Identificação da interface atualizada para MVP 0.3.
-- Cache offline ampliado para o módulo de nuvem.
-- Documentação de privacidade, segurança e configuração do Supabase.
-- Modo local mantido como comportamento padrão.
-
-### Segurança e compatibilidade
-
-- Nenhuma service-role é utilizada no frontend.
-- A configuração contém somente URL e chave pública.
-- Dados das versões 0.1, 0.2 e 0.2.1 continuam válidos.
-- A nuvem é opcional e não bloqueia o funcionamento offline.
+- Cadastro e login com Supabase Auth.
+- Sessão persistente com renovação de token.
+- Envio, download e mesclagem do workspace.
+- Sincronização automática opcional.
+- Workspace isolado por usuário com RLS.
 
 ## 0.2.1 — Operação e Lançamento
 
-### Adicionado
-
-- Cadastro, edição e exclusão de oportunidades próprias dentro do radar.
-- Inclusão automática das oportunidades próprias nos filtros, nichos e diagnósticos.
-- Restauração de backup JSON com opções de mesclar ou substituir os dados locais.
-- Backup ampliado com análises, testes, oportunidades próprias e planos de lançamento.
-- Geração de plano a partir de experimentos marcados como validados.
-- Metas de pedidos e receita, orçamento, data de início, status e checklist operacional.
-- Exportação individual de plano em Markdown e exportação consolidada em CSV.
-
-### Alterado
-
-- Cache offline ampliado para os módulos da versão 0.2.1.
-- Validação automática ampliada para o novo JavaScript, folhas de estilo e estrutura de backup.
-- Identificação da interface atualizada para MVP 0.2.1.
-
-### Compatibilidade
-
-- Análises e testes da versão 0.2 continuam válidos.
-- Backups antigos sem oportunidades próprias ou planos podem ser restaurados normalmente.
-- Nenhum backend, login ou serviço pago necessário.
+- Oportunidades próprias.
+- Restauração de backup JSON.
+- Planos de lançamento com metas, orçamento e checklist.
+- Exportação de planos em Markdown e CSV.
 
 ## 0.2.0 — Radar de Oportunidades
 
-### Adicionado
+- Catálogo inicial com 20 hipóteses.
+- Filtros, comparação de nichos e diagnóstico.
+- Funil de experimentos com métricas.
+- Exportações CSV e backup JSON.
 
-- Catálogo inicial com 20 hipóteses de produto e produto digital.
-- Filtros por categoria, capital, modelo e ordenação.
-- Comparação agregada entre nichos.
-- Conversão de oportunidade em diagnóstico preenchido.
-- Funil de experimentos em seis etapas.
-- Registro de métricas de conteúdo e conversão.
-- Registro de investimento, receita, próxima ação e aprendizados.
-- Exportações CSV para análises e experimentos.
-- Backup dos dados locais em JSON.
-- Validação automática da aplicação estática no GitHub Actions.
-
-### Alterado
-
-- Interface reorganizada como workspace operacional.
-- Aplicação modularizada em HTML, CSS, catálogo e JavaScript.
-- Cache offline atualizado para os novos arquivos.
-- Documentação e definição do produto ampliadas.
-
-### Compatibilidade
-
-- Migração automática das análises gravadas pela versão 0.1.
-- Nenhum backend, login ou serviço pago necessário.
-
-### Assinatura
+## Assinatura
 
 Tehkné Solutions
