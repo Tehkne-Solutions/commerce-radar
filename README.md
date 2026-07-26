@@ -2,22 +2,23 @@
 
 Produto web para ajudar empreendedores a decidir **o que vender, onde vender, como validar e quando transformar uma hipótese em lançamento**.
 
-## MVP 0.3.3
+## MVP 0.4.0
 
 - Radar com 20 oportunidades iniciais.
 - Cadastro de oportunidades próprias.
-- Filtros por categoria, capital e modelo operacional.
 - Score, margem, preço mínimo e ranking de canais.
 - Kanban de experimentos com métricas reais.
 - Planos de lançamento para hipóteses validadas.
 - Backup e restauração em JSON.
 - Conta opcional e sincronização entre dispositivos.
+- Histórico de revisões e resolução de conflitos.
 - Provisionamento automatizado do Supabase.
 - Diagnóstico administrativo de Auth, Data API, RLS e PWA.
-- **Histórico das últimas 30 revisões do workspace.**
-- **Detecção de conflito entre dispositivos por revisão esperada.**
-- **Restauração de versões antigas como uma nova revisão.**
-- **Exportação individual de qualquer versão em JSON.**
+- **Importação de CSV, TXT e TSV.**
+- **Detecção automática de separador e cabeçalhos.**
+- **Mapeamento revisável de produtos, custos, vendas e métricas.**
+- **Conversão de arquivos em oportunidades, análises e testes.**
+- **Modelos de produtos, vendas e tráfego para download.**
 - PWA e modo local preservados.
 
 ## Stack
@@ -41,7 +42,51 @@ python -m http.server 4173
 
 Acesse `http://localhost:4173`.
 
-## Ativação automatizada
+## Importação CSV
+
+A tela **Importar dados** aceita arquivos de até 8 MB e processa até 20.000 linhas no navegador.
+
+O sistema reconhece:
+
+- ponto e vírgula;
+- vírgula;
+- tabulação;
+- barra vertical;
+- arquivos com BOM;
+- valores como `R$ 1.234,56` e `90,00`;
+- cabeçalhos em português ou inglês.
+
+O fluxo é:
+
+1. selecionar ou arrastar o arquivo;
+2. informar a origem;
+3. revisar o mapeamento das colunas;
+4. analisar qualidade, totais e produtos;
+5. salvar somente o diagnóstico ou aplicar os dados.
+
+### Saídas automáticas
+
+**Produtos e custos** podem gerar:
+
+- oportunidades próprias;
+- análises comparáveis;
+- score inicial;
+- margem estimada e canal identificado.
+
+**Vendas e tráfego** podem gerar ou atualizar testes com:
+
+- pedidos;
+- receita;
+- visualizações;
+- cliques;
+- investimento;
+- etapa do funil.
+
+Ao atualizar um teste existente, é possível somar um novo período ou substituir as métricas anteriores.
+
+Guia completo: [`docs/CSV_IMPORT.md`](docs/CSV_IMPORT.md).
+
+## Ativação automatizada da nuvem
 
 Cadastre uma vez os GitHub Actions secrets:
 
@@ -58,7 +103,7 @@ O workflow:
 
 1. usa um projeto existente ou cria um novo;
 2. aguarda os serviços ficarem saudáveis;
-3. aplica todas as migrations com `supabase db push`;
+3. aplica todas as migrations;
 4. cria workspace, histórico, RPC e políticas RLS;
 5. obtém a chave pública;
 6. gera `cloud-config.js`;
@@ -68,49 +113,25 @@ O workflow:
 
 Guia completo: [`docs/AUTOMATED_ACTIVATION.md`](docs/AUTOMATED_ACTIVATION.md).
 
-## Primeira conta
-
-Na tela **Conta e sincronização**:
-
-1. informe e-mail e senha;
-2. clique em **Criar conta e ativar agora**;
-3. confirme o e-mail, quando essa exigência estiver habilitada;
-4. o primeiro workspace será enviado automaticamente.
-
 ## Sincronização com revisões
 
-Cada dispositivo conserva o número da última revisão que recebeu ou publicou.
+Cada dispositivo conserva o número da última revisão recebida ou publicada.
 
-Ao enviar dados, o app chama:
+O banco bloqueia a operação quando a revisão esperada não corresponde à revisão atual. Isso impede sobrescrita silenciosa entre dispositivos.
 
-```text
-sync_commerce_radar_workspace(expected_revision, workspace_payload, source_device, reason)
-```
+Quando ocorre conflito, o usuário pode:
 
-O banco bloqueia a operação quando `expected_revision` não corresponde à revisão atual. Isso impede que um dispositivo desatualizado sobrescreva silenciosamente outro.
-
-### Resolução de conflito
-
-Quando ocorre conflito, nenhuma informação é alterada. O usuário escolhe:
-
-- **Usar versão da nuvem:** substitui o navegador pela revisão remota.
-- **Mesclar e criar revisão:** combina registros por identificador e publica o resultado.
-- **Manter este dispositivo:** publica o estado local sobre a revisão remota atual, preservando a versão anterior no histórico.
+- usar a versão da nuvem;
+- mesclar e criar uma revisão;
+- manter o dispositivo e publicar uma nova revisão.
 
 A sincronização automática fica suspensa enquanto houver conflito pendente.
 
 ## Histórico e recuperação
 
-A tela **Conta e sincronização** lista até 30 revisões recentes, com:
+A tela **Conta e sincronização** lista até 30 revisões recentes, com data, dispositivo, motivo, exportação e restauração.
 
-- número da revisão;
-- data e hora;
-- dispositivo de origem;
-- motivo do envio;
-- exportação em JSON;
-- restauração.
-
-Restaurar não apaga o histórico. O conteúdo escolhido é publicado como uma nova revisão, permitindo retornar novamente a qualquer estado posterior.
+Restaurar não apaga o histórico. O conteúdo escolhido é publicado como uma nova revisão.
 
 ## Configuração manual alternativa
 
@@ -127,39 +148,25 @@ window.COMMERCE_RADAR_CLOUD = {
 
 A publishable key pode ser utilizada no navegador. **Nunca coloque `service_role`, PAT ou senha do banco no frontend.**
 
-## Diagnóstico administrativo
-
-O botão **Executar diagnóstico** verifica:
-
-- navegador e LocalStorage;
-- configuração pública;
-- Supabase Auth;
-- Data API;
-- isolamento anônimo por RLS;
-- sessão autenticada;
-- acesso ao workspace;
-- Service Worker.
-
-O relatório copiável não inclui credenciais ou tokens.
-
-## Segurança
+## Segurança e privacidade
 
 - O modo local não transmite dados.
+- Arquivos importados são processados no navegador.
+- O histórico de importações guarda resumos, não o CSV bruto.
 - PAT e senha do banco ficam apenas em GitHub Secrets.
-- Usuários autenticados possuem somente leitura direta da tabela atual e do próprio histórico.
-- Escritas são realizadas exclusivamente pelo RPC versionado.
-- O RPC usa `auth.uid()`, trava a linha durante a atualização e limita o payload a 5 MB.
+- Escritas na nuvem passam pelo RPC versionado.
+- O RPC limita o workspace a 5 MB.
 - Cada usuário acessa somente os próprios registros por RLS.
 - Consultas anônimas não recebem dados.
-- Restaurações e resoluções geram novas revisões auditáveis.
+- Backups não incluem credenciais.
 
 ## Limitações atuais
 
 - O catálogo contém hipóteses, não produtos com retorno garantido.
-- Não há coleta automática de tendências ou preços.
-- Métricas de testes ainda são inseridas manualmente.
-- A mesclagem ocorre por identificador; não é edição colaborativa em tempo real.
-- O histórico padrão exibe as 30 revisões mais recentes.
+- A importação depende da qualidade e do período dos dados fornecidos.
+- Arquivos de períodos sobrepostos podem duplicar métricas quando a opção **Somar** for utilizada.
+- Não há conexão OAuth direta com marketplaces nesta versão.
+- A mesclagem da nuvem ocorre por identificador; não é edição colaborativa em tempo real.
 - O score não constitui previsão financeira.
 
 ## Publicação
@@ -172,7 +179,7 @@ A `main` é publicada automaticamente pelo workflow do GitHub Pages.
 
 ## Roadmap
 
-- v0.4: importação de CSV e conectores oficiais de marketplaces.
+- v0.4.1: adaptadores para formatos exportados por marketplaces.
 - v0.5: atualização assistida de tendências e catálogo.
 - v1.0: inteligência de mercado e recomendações assistidas.
 
