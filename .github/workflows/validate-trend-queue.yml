@@ -6,6 +6,8 @@ on:
       - 'trend-queue.js'
       - 'trend-queue.css'
       - 'trend-radar.js'
+      - 'trend-calendar.js'
+      - 'cloud-bootstrap.js'
       - 'data.js'
       - 'sw.js'
       - 'VERSION'
@@ -87,8 +89,8 @@ jobs:
           for(const asset of ['./trend-queue.css','./trend-queue.js']){if(!data.includes(asset))throw new Error(`Loader ausente: ${asset}`);if(!sw.includes(asset))throw new Error(`Cache offline ausente: ${asset}`)}
           if(data.indexOf('./trend-queue.js')<data.indexOf('./trend-radar.js'))throw new Error('Fila deve carregar depois do Radar de tendências');
           if(!css.includes('.tqSummary')||!css.includes('.tqHistoryEntry')||css.length<1800)throw new Error('Estilos da fila incompletos');
-          if(version!=='0.5.1')throw new Error(`Versão incorreta: ${version}`);
-          if(!sw.includes('commerce-radar-v16'))throw new Error('Cache PWA não foi atualizado');
+          const parts=version.split('.').map(Number);if(parts[0]!==0||parts[1]<5||(parts[1]===5&&parts[2]<1))throw new Error(`Versão anterior à 0.5.1: ${version}`);
+          const cache=Number((sw.match(/commerce-radar-v(\d+)/)||[])[1]||0);if(cache<16)throw new Error('Cache PWA anterior à fila');
           for(const marker of ['Prioridade da fila','Revisão em lote','Histórico por sinal','Vencimentos próximos','Backup e sincronização'])if(!docs.includes(marker))throw new Error(`Documentação incompleta: ${marker}`);
           console.log('Integração, backup, nuvem, documentação e PWA válidos.');
           NODE
