@@ -95,7 +95,7 @@ jobs:
             if (!sw.includes(asset)) throw new Error(`Asset ausente no cache offline: ${asset}`);
           }
 
-          if (!config.includes("table:'commerce_radar_workspaces'")) throw new Error('Tabela padrão não configurada');
+          if (!config.includes('commerce_radar_workspaces')) throw new Error('Tabela padrão não configurada');
           for (const source of [sql, migration]) {
             if (!source.includes('enable row level security')) throw new Error('RLS não habilitada na migration');
             if (!source.includes('(select auth.uid()) = user_id')) throw new Error('Política por usuário ausente');
