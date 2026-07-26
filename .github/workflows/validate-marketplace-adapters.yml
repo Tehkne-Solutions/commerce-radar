@@ -1,0 +1,79 @@
+name: Validar adaptadores de marketplaces
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  validate-adapters:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe
+        run: |
+          node --check marketplace-adapters.js
+          node --check import.js
+          node --check data.js
+          node --check sw.js
+
+      - name: Testar detecção e normalização
+        run: |
+          node <<'NODE'
+          global.window = {};
+          global.document = undefined;
+          require('./marketplace-adapters.js');
+          const api = window.COMMERCE_RADAR_MARKETPLACE_ADAPTERS;
+          if (!api || api.adapters.length !== 6) throw new Error('Esperados seis adaptadores.');
+
+          const shopify = `Name,Financial Status,Paid at,Lineitem quantity,Lineitem name,Lineitem price,Lineitem sku\n#1001,paid,2026-07-26,2,Organizador de cabos,39.90,CAB-1\n#1002,refunded,2026-07-26,1,Produto devolvido,20.00,DEV-1`;
+          const shopifyResult = api.transformText(shopify, 'orders_export.csv');
+          if (!shopifyResult.matched || shopifyResult.adapter.id !== 'shopify-orders') throw new Error('Shopify Orders não detectado.');
+          if (shopifyResult.rows.length !== 1 || shopifyResult.rows[0].receita !== 79.8 || shopifyResult.rows[0].pedidos !== 1) throw new Error('Shopify Orders normalizado incorretamente.');
+
+          const woo = `Type,SKU,Name,Regular price,Sale price,Stock,Categories,Cost of goods\nsimple,CAB-1,Organizador de cabos,49.90,39.90,25,Tecnologia,12.50`;
+          const wooResult = api.transformText(woo, 'woocommerce-products.csv');
+          if (wooResult.adapter.id !== 'woocommerce-products') throw new Error('WooCommerce Products não detectado.');
+          if (wooResult.rows[0].preco !== 39.9 || wooResult.rows[0].custo !== 12.5 || wooResult.rows[0].estoque !== 25) throw new Error('WooCommerce Products normalizado incorretamente.');
+
+          const meli = `Número da venda;Data da venda;Título da publicação;SKU;Quantidade;Preço unitário;Receita por produtos;Tarifa de venda;Status da venda\n20001;26/07/2026;Suporte articulado;SUP-1;2;R$ 89,90;R$ 179,80;R$ 22,00;paid`;
+          const meliResult = api.transformText(meli, 'vendas-mercado-livre.csv');
+          if (meliResult.adapter.id !== 'mercadolivre-orders') throw new Error('Mercado Livre não detectado.');
+          if (meliResult.rows[0].receita !== 179.8 || meliResult.rows[0].taxas !== 22 || meliResult.rows[0].canal !== 'Mercado Livre') throw new Error('Mercado Livre normalizado incorretamente.');
+
+          const shopee = `No. do pedido;Data de criação do pedido;Nome do produto;Número de referência SKU;Quantidade;Preço acordado;Subtotal do produto;Taxa de comissão;Status do pedido\nSH-10;26/07/2026;Seladora portátil;SEL-1;3;29,90;89,70;8,97;Concluído`;
+          const shopeeResult = api.transformText(shopee, 'pedidos-shopee.csv');
+          if (shopeeResult.adapter.id !== 'shopee-orders') throw new Error('Shopee não detectado.');
+          if (shopeeResult.rows[0].receita !== 89.7 || shopeeResult.rows[0].unidades !== 3 || shopeeResult.rows[0].taxas !== 8.97) throw new Error('Shopee normalizado incorretamente.');
+
+          const generic = api.transformText('produto;preco\nItem;10,00', 'generico.csv');
+          if (generic.matched) throw new Error('Arquivo genérico não deveria forçar adaptador.');
+          console.log('Adaptadores válidos: Shopify, WooCommerce, Mercado Livre e Shopee.');
+          NODE
+
+      - name: Validar integração, ordem e PWA
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const data = fs.readFileSync('data.js', 'utf8');
+          const sw = fs.readFileSync('sw.js', 'utf8');
+          const adapters = fs.readFileSync('marketplace-adapters.js', 'utf8');
+          const css = fs.readFileSync('marketplace-adapters.css', 'utf8');
+          const expected = ['./marketplace-adapters.css', './marketplace-adapters.js'];
+          for (const asset of expected) {
+            if (!data.includes(asset)) throw new Error(`Loader sem ${asset}`);
+            if (!sw.includes(asset)) throw new Error(`Cache offline sem ${asset}`);
+          }
+          if (data.indexOf('./marketplace-adapters.js') > data.indexOf('./import.js')) throw new Error('Adaptadores precisam carregar antes do importador.');
+          for (const marker of ['shopify-orders','woocommerce-products','mercadolivre-orders','shopee-orders','Adaptador de plataforma']) {
+            if (!adapters.includes(marker)) throw new Error(`Marcador ausente: ${marker}`);
+          }
+          if (!css.includes('.adapterStatus')) throw new Error('Estilos do adaptador ausentes.');
+          console.log('Loader, interface e PWA válidos.');
+          NODE
