@@ -40,6 +40,7 @@ if(typeof document!=='undefined'){
     addStyle('./financial-reconciliation.css');
     addStyle('./financial-close.css');
     addStyle('./financial-planning.css');
-    addScript('./cloud-config.js',()=>addScript('./cloud.js',()=>addScript('./cloud-bootstrap.js',()=>addScript('./cloud-diagnostics.js',()=>addScript('./cloud-history.js',()=>addScript('./marketplace-adapters.js',()=>addScript('./import.js',()=>addScript('./financial-audit.js',()=>addScript('./financial-reconciliation.js',()=>addScript('./financial-close.js',()=>addScript('./financial-planning.js')))))))))));
+    addStyle('./trend-radar.css');
+    addScript('./cloud-config.js',()=>addScript('./cloud.js',()=>addScript('./cloud-bootstrap.js',()=>addScript('./cloud-diagnostics.js',()=>addScript('./cloud-history.js',()=>addScript('./marketplace-adapters.js',()=>addScript('./import.js',()=>addScript('./financial-audit.js',()=>addScript('./financial-reconciliation.js',()=>addScript('./financial-close.js',()=>addScript('./financial-planning.js',()=>addScript('./trend-radar.js'))))))))))));
   },{once:true});
 }
