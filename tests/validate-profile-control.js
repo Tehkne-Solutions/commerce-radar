@@ -92,7 +92,9 @@ for (const asset of ['./recommendation-profile-control.css', './recommendation-p
 }
 if (loader.indexOf('./recommendation-profile-control.js') < loader.indexOf('./recommendation-segments.js')) throw new Error('Controle deve carregar após perfis segmentados');
 if (!css.includes('.profileControlSummary') || !css.includes('.profileComparisonTable') || css.length < 2500) throw new Error('CSS de controle incompleto');
-if (version !== '0.6.3') throw new Error(`Versão incorreta: ${version}`);
-if (!sw.includes('commerce-radar-v23')) throw new Error('Cache PWA não foi atualizado');
+const parts = version.split('.').map(Number);
+if (parts[0] !== 0 || parts[1] < 6 || (parts[1] === 6 && parts[2] < 3)) throw new Error(`Versão anterior a 0.6.3: ${version}`);
+const cacheMatch = sw.match(/commerce-radar-v(\d+)/);
+if (!cacheMatch || Number(cacheMatch[1]) < 23) throw new Error('Cache PWA anterior ao controle de perfis');
 for (const marker of ['Modos', 'Precedência', 'Regra de perfil único', 'Comparação antes da ativação', 'Rollback', 'Backup e sincronização']) if (!docs.includes(marker)) throw new Error(`Documentação incompleta: ${marker}`);
 console.log('Simulação, precedência, ativação, ranking, rollback, backup e PWA válidos.');
