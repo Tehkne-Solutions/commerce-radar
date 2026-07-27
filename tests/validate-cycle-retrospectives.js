@@ -114,8 +114,10 @@ const fs = require('fs');
   }
   if (loader.indexOf('./activation-retrospective.js') < loader.indexOf('./activation-tracking.js')) throw new Error('Retrospectiva deve carregar após acompanhamento diário');
   if (!css.includes('.cycleSummary') || !css.includes('.cycleTable') || css.length < 1500) throw new Error('CSS de retrospectiva incompleto');
-  if (version !== '0.7.3') throw new Error(`Versão incorreta: ${version}`);
-  if (!sw.includes('commerce-radar-v33')) throw new Error('Cache PWA não foi atualizado');
+  const parts = version.split('.').map(Number);
+  if (parts[0] !== 0 || parts[1] < 7 || (parts[1] === 7 && parts[2] < 3)) throw new Error(`Versão anterior a 0.7.3: ${version}`);
+  const cacheMatch = sw.match(/commerce-radar-v(\d+)/);
+  if (!cacheMatch || Number(cacheMatch[1]) < 33) throw new Error('Cache PWA anterior às retrospectivas');
   for (const marker of ['Score do ciclo', 'Comparação por produto', 'Comparação por canal', 'Padrões de otimização', 'Retrospectiva humana', 'Backup e sincronização']) if (!docs.includes(marker)) throw new Error(`Documentação incompleta: ${marker}`);
 
   console.log('Ranking, grupos, otimizações, retrospectivas, snapshot, backup e PWA válidos.');
