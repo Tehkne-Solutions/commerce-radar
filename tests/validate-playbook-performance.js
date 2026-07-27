@@ -119,8 +119,10 @@ const fs = require('fs');
   }
   if (loader.indexOf('./activation-playbook-performance.js') < loader.indexOf('./activation-playbooks.js')) throw new Error('Desempenho deve carregar após a biblioteca');
   if (!css.includes('.pbpSummary') || !css.includes('.pbpCard') || css.length < 1500) throw new Error('CSS de desempenho incompleto');
-  if (version !== '0.7.5') throw new Error(`Versão incorreta: ${version}`);
-  if (!sw.includes('commerce-radar-v35')) throw new Error('Cache PWA não foi atualizado');
+  const parts = version.split('.').map(Number);
+  if (parts[0] !== 0 || parts[1] < 7 || (parts[1] === 7 && parts[2] < 5)) throw new Error(`Versão anterior a 0.7.5: ${version}`);
+  const cacheMatch = sw.match(/commerce-radar-v(\d+)/);
+  if (!cacheMatch || Number(cacheMatch[1]) < 35) throw new Error('Cache PWA anterior ao desempenho de playbooks');
   for (const marker of ['Unidade de comparação', 'Resultado de cada aplicação', 'Classificação do playbook', 'Arquivamento protegido', 'Backup e sincronização']) if (!docs.includes(marker)) throw new Error(`Documentação incompleta: ${marker}`);
 
   console.log('Desempenho, classificação, revisão, arquivamento, snapshot, backup e PWA válidos.');

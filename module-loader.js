@@ -29,6 +29,7 @@
     './activation-retrospective.css',
     './activation-playbooks.css',
     './activation-playbook-performance.css',
+    './activation-playbook-versions.css',
   ];
 
   const scripts = [
@@ -60,6 +61,7 @@
     './activation-retrospective.js',
     './activation-playbooks.js',
     './activation-playbook-performance.js',
+    './activation-playbook-versions.js',
     './cloud-bootstrap.js',
   ];
 
