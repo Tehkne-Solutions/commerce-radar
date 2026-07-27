@@ -103,7 +103,7 @@ const fs = require('fs');
   const docs = fs.readFileSync('docs/ONBOARDING_GUIDE.md', 'utf8');
   const version = fs.readFileSync('VERSION', 'utf8').trim();
 
-  for (const marker of ['Onboarding operacional', 'onboardingState', 'onboardingEvents', "version: '0.7.0'", 'Tehkné Solutions']) {
+  for (const marker of ['ONBOARDING OPERACIONAL', 'onboardingState', 'onboardingEvents', "version: '0.7.0'", 'Tehkné Solutions']) {
     if (!code.includes(marker)) throw new Error(`Marcador ausente no onboarding: ${marker}`);
   }
   for (const asset of ['./onboarding.css', './onboarding.js']) {
