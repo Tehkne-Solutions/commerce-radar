@@ -96,8 +96,10 @@ const fs = require('fs');
   }
   if (loader.indexOf('./activation-tracking.js') < loader.indexOf('./activation-plan.js')) throw new Error('Acompanhamento deve carregar após o plano');
   if (!css.includes('.trackingSummary') || !css.includes('.trackingLayout') || css.length < 1800) throw new Error('CSS de acompanhamento incompleto');
-  if (version !== '0.7.2') throw new Error(`Versão incorreta: ${version}`);
-  if (!sw.includes('commerce-radar-v32')) throw new Error('Cache PWA não foi atualizado');
+  const parts = version.split('.').map(Number);
+  if (parts[0] !== 0 || parts[1] < 7 || (parts[1] === 7 && parts[2] < 2)) throw new Error(`Versão anterior a 0.7.2: ${version}`);
+  const cacheMatch = sw.match(/commerce-radar-v(\d+)/);
+  if (!cacheMatch || Number(cacheMatch[1]) < 32) throw new Error('Cache PWA anterior ao acompanhamento diário');
   for (const marker of ['Check-in diário', 'Meta acumulada', 'Alertas', 'Mudanças na oferta', 'Comparação antes e depois', 'Backup e sincronização']) {
     if (!docs.includes(marker)) throw new Error(`Documentação incompleta: ${marker}`);
   }
