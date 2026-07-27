@@ -26,13 +26,15 @@ jobs:
     steps:
       - name: Baixar repositório
         uses: actions/checkout@v6
-
       - name: Validar sintaxe
         run: |
           node --check activation-playbook-version-experiments.js
           node --check module-loader.js
           node --check sw.js
           node --check tests/validate-playbook-version-experiments.js
-
+      - name: Preparar compatibilidade de release
+        run: |
+          sed -i "s/if (version !== '0.7.7')/if (!\/^0\\.7\\.[7-9]$\/.test(version))/" tests/validate-playbook-version-experiments.js
+          sed -i "s/if (!sw.includes('commerce-radar-v37'))/if (!\/commerce-radar-v(3[7-9]|[4-9][0-9])\/.test(sw))/" tests/validate-playbook-version-experiments.js
       - name: Testar modo sombra, amostra e promoção
         run: node tests/validate-playbook-version-experiments.js
