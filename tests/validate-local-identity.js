@@ -124,8 +124,10 @@ if (!api) throw new Error('API de identidade local não inicializada');
   }
   if (loader.indexOf('./recommendation-identity.js') < loader.indexOf('./recommendation-audit.js')) throw new Error('Identidade deve carregar após auditoria');
   if (!css.includes('.identitySummary') || !css.includes('.identityPermissionList') || css.length < 2500) throw new Error('CSS de identidade incompleto');
-  if (version !== '0.6.8') throw new Error(`Versão incorreta: ${version}`);
-  if (!sw.includes('commerce-radar-v28')) throw new Error('Cache PWA não foi atualizado');
+  const parts = version.split('.').map(Number);
+  if (parts[0] !== 0 || parts[1] < 6 || (parts[1] === 6 && parts[2] < 8)) throw new Error(`Versão anterior a 0.6.8: ${version}`);
+  const cacheMatch = sw.match(/commerce-radar-v(\d+)/);
+  if (!cacheMatch || Number(cacheMatch[1]) < 28) throw new Error('Cache PWA anterior à identidade local');
   for (const marker of ['Primeiro acesso', 'Proteção do PIN', 'Sessão local', 'Perfis iniciais', 'Dupla verificação das ações', 'Backup e sincronização']) {
     if (!docs.includes(marker)) throw new Error(`Documentação incompleta: ${marker}`);
   }

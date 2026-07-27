@@ -22,6 +22,7 @@
     './recommendation-governance.css',
     './recommendation-audit.css',
     './recommendation-identity.css',
+    './recommendation-access-review.css',
   ];
 
   const scripts = [
@@ -46,6 +47,7 @@
     './recommendation-governance.js',
     './recommendation-audit.js',
     './recommendation-identity.js',
+    './recommendation-access-review.js',
     './cloud-bootstrap.js',
   ];
 
