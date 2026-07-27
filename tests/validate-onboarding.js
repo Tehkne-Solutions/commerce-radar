@@ -112,8 +112,10 @@ const fs = require('fs');
   }
   if (loader.indexOf('./onboarding.js') < loader.indexOf('./recommendation-access-review.js')) throw new Error('Onboarding deve carregar após identidade e revisão de acesso');
   if (!css.includes('.onboardingProgress') || !css.includes('.onboardingPanel') || css.length < 2500) throw new Error('CSS do onboarding incompleto');
-  if (version !== '0.7.0') throw new Error(`Versão incorreta: ${version}`);
-  if (!sw.includes('commerce-radar-v30')) throw new Error('Cache PWA não foi atualizado');
+  const parts = version.split('.').map(Number);
+  if (parts[0] !== 0 || parts[1] < 7) throw new Error(`Versão anterior a 0.7.0: ${version}`);
+  const cacheMatch = sw.match(/commerce-radar-v(\d+)/);
+  if (!cacheMatch || Number(cacheMatch[1]) < 30) throw new Error('Cache PWA anterior ao onboarding');
   for (const marker of ['Etapa 1 — Workspace', 'Etapa 3 — Equipe', 'Etapa 4 — Origem dos dados', 'Primeira recomendação', 'Critérios de conclusão', 'Backup e sincronização']) {
     if (!docs.includes(marker)) throw new Error(`Documentação incompleta: ${marker}`);
   }
