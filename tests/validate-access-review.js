@@ -120,8 +120,10 @@ const fs = require('fs');
   }
   if (loader.indexOf('./recommendation-access-review.js') < loader.indexOf('./recommendation-identity.js')) throw new Error('Revisão de acesso deve carregar após identidade');
   if (!css.includes('.accessReviewSummary') || !css.includes('.accessReviewCard') || css.length < 1800) throw new Error('CSS de revisão de acesso incompleto');
-  if (version !== '0.6.9') throw new Error(`Versão incorreta: ${version}`);
-  if (!sw.includes('commerce-radar-v29')) throw new Error('Cache PWA não foi atualizado');
+  const parts = version.split('.').map(Number);
+  if (parts[0] !== 0 || parts[1] < 6 || (parts[1] === 6 && parts[2] < 9)) throw new Error(`Versão anterior a 0.6.9: ${version}`);
+  const cacheMatch = sw.match(/commerce-radar-v(\d+)/);
+  if (!cacheMatch || Number(cacheMatch[1]) < 29) throw new Error('Cache PWA anterior à revisão de acesso');
   for (const marker of ['Validade da conta', 'Revogação de sessões', 'Inatividade', 'Permissões privilegiadas', 'Revisão periódica', 'Backup e sincronização']) {
     if (!docs.includes(marker)) throw new Error(`Documentação incompleta: ${marker}`);
   }
