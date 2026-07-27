@@ -1,0 +1,37 @@
+name: Validar champion challenger
+
+on:
+  pull_request:
+    paths:
+      - 'recommendation-champion.js'
+      - 'recommendation-champion.css'
+      - 'recommendation-drift.js'
+      - 'recommendation-profile-control.js'
+      - 'module-loader.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/CHAMPION_CHALLENGER.md'
+      - 'tests/validate-champion-challenger.js'
+      - '.github/workflows/validate-champion-challenger.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-champion-challenger:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe
+        run: |
+          node --check recommendation-champion.js
+          node --check module-loader.js
+          node --check sw.js
+          node --check tests/validate-champion-challenger.js
+
+      - name: Executar cenários champion challenger
+        run: node tests/validate-champion-challenger.js
