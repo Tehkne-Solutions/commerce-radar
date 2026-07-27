@@ -23,6 +23,7 @@
     './recommendation-audit.css',
     './recommendation-identity.css',
     './recommendation-access-review.css',
+    './onboarding.css',
   ];
 
   const scripts = [
@@ -48,6 +49,7 @@
     './recommendation-audit.js',
     './recommendation-identity.js',
     './recommendation-access-review.js',
+    './onboarding.js',
     './cloud-bootstrap.js',
   ];
 
