@@ -1,0 +1,31 @@
+name: Validar estratificação dos ciclos
+on:
+  pull_request:
+    paths:
+      - 'activation-cycle-stratification.js'
+      - 'activation-cycle-stratification.css'
+      - 'activation-experiment-allocation.js'
+      - 'module-loader.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/CYCLE_STRATIFICATION.md'
+      - 'tests/validate-cycle-stratification.js'
+      - '.github/workflows/validate-cycle-stratification.yml'
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  validate-cycle-stratification:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+      - name: Validar sintaxe
+        run: |
+          node --check activation-cycle-stratification.js
+          node --check module-loader.js
+          node --check sw.js
+          node --check tests/validate-cycle-stratification.js
+      - name: Testar estratos, cobertura e vieses
+        run: node tests/validate-cycle-stratification.js
