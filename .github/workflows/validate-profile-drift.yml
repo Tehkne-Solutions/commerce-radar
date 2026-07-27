@@ -1,0 +1,33 @@
+name: Validar monitoramento de drift
+
+on:
+  pull_request:
+    paths:
+      - 'recommendation-drift.js'
+      - 'recommendation-drift.css'
+      - 'recommendation-profile-control.js'
+      - 'module-loader.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/PROFILE_DRIFT.md'
+      - 'tests/validate-profile-drift.js'
+      - '.github/workflows/validate-profile-drift.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-profile-drift:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+      - name: Validar sintaxe
+        run: |
+          node --check recommendation-drift.js
+          node --check module-loader.js
+          node --check sw.js
+      - name: Executar cenários de drift
+        run: node tests/validate-profile-drift.js
