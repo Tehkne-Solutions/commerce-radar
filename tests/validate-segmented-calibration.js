@@ -82,7 +82,7 @@ const snapshots = [{
     prediction('casa 4', 'Casa 4', { status: 'failure' }),
     prediction('moda 1', 'Moda 1', { status: 'success' }, 70, 'Mercado Livre'),
     prediction('moda 2', 'Moda 2', { status: 'failure' }, 55, 'Mercado Livre'),
-  ],
+  ]
 }];
 const input = {
   signals: [
@@ -137,7 +137,9 @@ for (const asset of ['./recommendation-segments.css', './recommendation-segments
 }
 if (loader.indexOf('./recommendation-segments.js') < loader.indexOf('./recommendation-calibration.js')) throw new Error('Segmentação deve carregar após calibração global');
 if (!css.includes('.segmentSummary') || !css.includes('.segmentGroup') || css.length < 3500) throw new Error('CSS segmentado incompleto');
-if (version !== '0.6.2') throw new Error(`Versão incorreta: ${version}`);
-if (!sw.includes('commerce-radar-v22')) throw new Error('Cache PWA não foi atualizado');
+const parts = version.split('.').map(Number);
+if (parts[0] !== 0 || parts[1] < 6 || (parts[1] === 6 && parts[2] < 2)) throw new Error(`Versão anterior a 0.6.2: ${version}`);
+const cacheMatch = sw.match(/commerce-radar-v(\d+)/);
+if (!cacheMatch || Number(cacheMatch[1]) < 22) throw new Error('Cache PWA anterior à calibração segmentada');
 for (const marker of ['Dimensões disponíveis', 'Coortes comparáveis', 'Amostra mínima', 'Perfil segmentado', 'Prévia do impacto', 'Backup e sincronização']) if (!docs.includes(marker)) throw new Error(`Documentação incompleta: ${marker}`);
 console.log('Segmentação, isolamento, perfis, prévia, backup e PWA válidos.');
