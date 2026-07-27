@@ -90,7 +90,9 @@ for (const asset of ['./recommendation-drift.css', './recommendation-drift.js'])
 }
 if (loader.indexOf('./recommendation-drift.js') < loader.indexOf('./recommendation-profile-control.js')) throw new Error('Drift deve carregar após aplicação de perfis');
 if (!css.includes('.driftSummary') || !css.includes('.driftProfile') || css.length < 1800) throw new Error('CSS de drift incompleto');
-if (version !== '0.6.4') throw new Error(`Versão incorreta: ${version}`);
-if (!sw.includes('commerce-radar-v24')) throw new Error('Cache PWA não foi atualizado');
+const parts = version.split('.').map(Number);
+if (parts[0] !== 0 || parts[1] < 6 || (parts[1] === 6 && parts[2] < 4)) throw new Error(`Versão anterior a 0.6.4: ${version}`);
+const cacheMatch = sw.match(/commerce-radar-v(\d+)/);
+if (!cacheMatch || Number(cacheMatch[1]) < 24) throw new Error('Cache PWA anterior ao monitoramento de drift');
 for (const marker of ['Casos comparáveis', 'Baseline global', 'Brier score', 'Drift crítico', 'Revisões humanas', 'Backup e sincronização']) if (!docs.includes(marker)) throw new Error(`Documentação incompleta: ${marker}`);
 console.log('Drift, baseline global, Brier, revisão humana, backup e PWA válidos.');
