@@ -121,7 +121,9 @@ for (const asset of ['./recommendation-champion.css', './recommendation-champion
 }
 if (loader.indexOf('./recommendation-champion.js') < loader.indexOf('./recommendation-drift.js')) throw new Error('Champion–challenger deve carregar após drift');
 if (!css.includes('.championSummary') || !css.includes('.championCard') || css.length < 1800) throw new Error('CSS champion–challenger incompleto');
-if (version !== '0.6.5') throw new Error(`Versão incorreta: ${version}`);
-if (!sw.includes('commerce-radar-v25')) throw new Error('Cache PWA não foi atualizado');
+const versionParts = version.split('.').map(Number);
+if (versionParts[0] !== 0 || versionParts[1] < 6 || (versionParts[1] === 6 && versionParts[2] < 5)) throw new Error(`Versão anterior a 0.6.5: ${version}`);
+const cacheMatch = sw.match(/commerce-radar-v(\d+)/);
+if (!cacheMatch || Number(cacheMatch[1]) < 25) throw new Error('Cache PWA anterior ao champion–challenger');
 for (const marker of ['Champion', 'Challenger', 'Congelamento do baseline', 'Capturas em modo sombra', 'Promoção manual', 'Backup e sincronização']) if (!docs.includes(marker)) throw new Error(`Documentação incompleta: ${marker}`);
 console.log('Champion, challenger, modo sombra, promoção manual, baseline, backup e PWA válidos.');

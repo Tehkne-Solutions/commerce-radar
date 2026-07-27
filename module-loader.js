@@ -19,6 +19,7 @@
     './recommendation-profile-control.css',
     './recommendation-drift.css',
     './recommendation-champion.css',
+    './recommendation-governance.css',
   ];
 
   const scripts = [
@@ -40,6 +41,7 @@
     './recommendation-profile-control.js',
     './recommendation-drift.js',
     './recommendation-champion.js',
+    './recommendation-governance.js',
     './cloud-bootstrap.js',
   ];
 
