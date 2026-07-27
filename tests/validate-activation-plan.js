@@ -116,8 +116,10 @@ const fs = require('fs');
   }
   if (loader.indexOf('./activation-plan.js') < loader.indexOf('./onboarding.js')) throw new Error('Plano deve carregar após onboarding');
   if (!css.includes('.activationSummary') || !css.includes('.activationPlan') || css.length < 2500) throw new Error('CSS do plano incompleto');
-  if (version !== '0.7.1') throw new Error(`Versão incorreta: ${version}`);
-  if (!sw.includes('commerce-radar-v31')) throw new Error('Cache PWA não foi atualizado');
+  const parts = version.split('.').map(Number);
+  if (parts[0] !== 0 || parts[1] < 7 || (parts[1] === 7 && parts[2] < 1)) throw new Error(`Versão anterior a 0.7.1: ${version}`);
+  const cacheMatch = sw.match(/commerce-radar-v(\d+)/);
+  if (!cacheMatch || Number(cacheMatch[1]) < 31) throw new Error('Cache PWA anterior ao plano de sete dias');
   for (const marker of ['Dia 1 — Hipótese e oferta', 'Dia 7 — Decisão', 'Sugestões do sistema', 'Decisão humana', 'Integração com testes', 'Backup e sincronização']) {
     if (!docs.includes(marker)) throw new Error(`Documentação incompleta: ${marker}`);
   }
