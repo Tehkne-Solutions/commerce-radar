@@ -1,0 +1,37 @@
+name: Validar políticas e revisão de acesso
+
+on:
+  pull_request:
+    paths:
+      - 'recommendation-access-review.js'
+      - 'recommendation-access-review.css'
+      - 'recommendation-identity.js'
+      - 'module-loader.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/ACCESS_REVIEW_POLICIES.md'
+      - 'tests/validate-access-review.js'
+      - '.github/workflows/validate-access-review.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-access-review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe
+        run: |
+          node --check recommendation-identity.js
+          node --check recommendation-access-review.js
+          node --check module-loader.js
+          node --check sw.js
+          node --check tests/validate-access-review.js
+
+      - name: Testar políticas, revisão e revogação
+        run: node tests/validate-access-review.js
