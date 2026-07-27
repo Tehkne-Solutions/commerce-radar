@@ -1,0 +1,39 @@
+name: Validar calibração segmentada
+
+on:
+  pull_request:
+    paths:
+      - 'recommendation-segments.js'
+      - 'recommendation-segments.css'
+      - 'recommendation-calibration.js'
+      - 'recommendations.js'
+      - 'module-loader.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/SEGMENTED_CALIBRATION.md'
+      - 'tests/validate-segmented-calibration.js'
+      - '.github/workflows/validate-segmented-calibration.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-segmented-calibration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe
+        run: |
+          node --check recommendation-segments.js
+          node --check recommendation-calibration.js
+          node --check recommendations.js
+          node --check module-loader.js
+          node --check sw.js
+          node --check tests/validate-segmented-calibration.js
+
+      - name: Executar cenários segmentados
+        run: node tests/validate-segmented-calibration.js
