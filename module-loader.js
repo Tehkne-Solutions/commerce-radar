@@ -16,6 +16,7 @@
     './recommendations.css',
     './recommendation-calibration.css',
     './recommendation-segments.css',
+    './recommendation-profile-control.css',
   ];
 
   const scripts = [
@@ -34,6 +35,7 @@
     './recommendations.js',
     './recommendation-calibration.js',
     './recommendation-segments.js',
+    './recommendation-profile-control.js',
     './cloud-bootstrap.js',
   ];
 
