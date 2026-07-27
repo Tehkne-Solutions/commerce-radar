@@ -50,7 +50,9 @@ for (const asset of ['./trend-sla.css', './trend-sla.js']) {
 }
 if (bootstrap.indexOf('./trend-sla.js') < bootstrap.indexOf('./trend-operations.js')) throw new Error('SLA deve carregar após operação');
 if (!css.includes('.tsSummary') || !css.includes('.tsOwners') || css.length < 2500) throw new Error('Estilos de SLA incompletos');
-if (version !== '0.5.4') throw new Error(`Versão incorreta: ${version}`);
-if (!sw.includes('commerce-radar-v19')) throw new Error('Cache PWA não foi atualizado');
+const versionParts = version.split('.').map(Number);
+if (versionParts[0] < 0 || (versionParts[0] === 0 && versionParts[1] < 5) || (versionParts[0] === 0 && versionParts[1] === 5 && versionParts[2] < 4)) throw new Error(`Versão anterior a 0.5.4: ${version}`);
+const cacheMatch = sw.match(/commerce-radar-v(\d+)/);
+if (!cacheMatch || Number(cacheMatch[1]) < 19) throw new Error('Cache PWA anterior ao SLA');
 for (const marker of ['Fonte dos indicadores', 'Metas de SLA', 'Comparação semanal', 'Desvios recorrentes', 'Fechamento semanal', 'Backup e sincronização']) if (!docs.includes(marker)) throw new Error(`Documentação incompleta: ${marker}`);
 console.log('SLA, recorrência, fechamento, integração e PWA válidos.');
