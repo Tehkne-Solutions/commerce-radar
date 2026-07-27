@@ -24,6 +24,7 @@
     './recommendation-identity.css',
     './recommendation-access-review.css',
     './onboarding.css',
+    './activation-plan.css',
   ];
 
   const scripts = [
@@ -50,6 +51,7 @@
     './recommendation-identity.js',
     './recommendation-access-review.js',
     './onboarding.js',
+    './activation-plan.js',
     './cloud-bootstrap.js',
   ];
 
