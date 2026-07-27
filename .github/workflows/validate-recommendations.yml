@@ -1,0 +1,38 @@
+name: Validar recomendações explicáveis
+
+on:
+  pull_request:
+    paths:
+      - 'recommendations.js'
+      - 'recommendations.css'
+      - 'module-loader.js'
+      - 'app.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/RECOMMENDATIONS.md'
+      - 'tests/validate-recommendations.js'
+      - 'tests/validate-sla.js'
+      - '.github/workflows/validate-recommendations.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-recommendations:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe
+        run: |
+          node --check app.js
+          node --check module-loader.js
+          node --check recommendations.js
+          node --check sw.js
+          node --check tests/validate-recommendations.js
+
+      - name: Executar cenários de ranking explicável
+        run: node tests/validate-recommendations.js
