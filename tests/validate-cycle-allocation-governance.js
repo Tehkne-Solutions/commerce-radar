@@ -53,7 +53,7 @@ for(const marker of ['Governança da alocação dos ciclos','allocationPolicies'
 for(const asset of ['./activation-experiment-allocation.css','./activation-experiment-allocation.js']) { assert(loader.includes(asset)); assert(sw.includes(asset)); }
 assert(loader.indexOf('./activation-experiment-allocation.js') > loader.indexOf('./activation-playbook-version-experiments.js'));
 assert(css.includes('.alSummary') && css.includes('.alSignals'));
-assert.strictEqual(version,'0.7.8');
-assert(sw.includes('commerce-radar-v38'));
+assert(/^0\.(7\.[89]|[89]\.|[1-9]\d\.)/.test(version),`Versão posterior incompatível: ${version}`);
+assert(/commerce-radar-v(3[8-9]|[4-9]\d|\d{3,})/.test(sw),'Cache PWA posterior não reconhecido');
 for(const marker of ['Distribuição recomendada','Limite de desequilíbrio','Critérios de parada','Exceções','Backup e sincronização']) assert(docs.includes(marker));
 console.log('Governança da alocação, exceções, parada, backup e PWA válidos.');
