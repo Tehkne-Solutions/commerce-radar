@@ -1,0 +1,37 @@
+name: Validar plano de sete dias
+
+on:
+  pull_request:
+    paths:
+      - 'activation-plan.js'
+      - 'activation-plan.css'
+      - 'onboarding.js'
+      - 'recommendations.js'
+      - 'module-loader.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/SEVEN_DAY_ACTIVATION.md'
+      - 'tests/validate-activation-plan.js'
+      - '.github/workflows/validate-activation-plan.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-activation-plan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe
+        run: |
+          node --check activation-plan.js
+          node --check module-loader.js
+          node --check sw.js
+          node --check tests/validate-activation-plan.js
+
+      - name: Testar plano de ativação
+        run: node tests/validate-activation-plan.js
