@@ -25,6 +25,7 @@
     './recommendation-access-review.css',
     './onboarding.css',
     './activation-plan.css',
+    './activation-tracking.css',
   ];
 
   const scripts = [
@@ -52,6 +53,7 @@
     './recommendation-access-review.js',
     './onboarding.js',
     './activation-plan.js',
+    './activation-tracking.js',
     './cloud-bootstrap.js',
   ];
 
