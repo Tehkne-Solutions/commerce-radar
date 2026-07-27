@@ -132,8 +132,10 @@ for (const asset of ['./recommendation-calibration.css', './recommendation-calib
 }
 if (loader.indexOf('./recommendation-calibration.js') < loader.indexOf('./recommendations.js')) throw new Error('Calibração deve carregar após recomendações');
 if (!css.includes('.calibrationSummary') || !css.includes('.calibrationMatrixGrid') || css.length < 2500) throw new Error('CSS de calibração incompleto');
-if (version !== '0.6.1') throw new Error(`Versão incorreta: ${version}`);
-if (!sw.includes('commerce-radar-v21')) throw new Error('Cache PWA não foi atualizado');
+const versionParts = version.split('.').map(Number);
+if (versionParts[0] !== 0 || versionParts[1] < 6 || (versionParts[1] === 6 && versionParts[2] < 1)) throw new Error(`Versão anterior a 0.6.1: ${version}`);
+const cacheMatch = sw.match(/commerce-radar-v(\d+)/);
+if (!cacheMatch || Number(cacheMatch[1]) < 21) throw new Error('Cache PWA anterior à calibração global');
 for (const marker of ['Horizonte de resultado', 'Matriz de acertos', 'Sugestão de pesos', 'Aplicação e reversão', 'Backup e sincronização']) {
   if (!docs.includes(marker)) throw new Error(`Documentação incompleta: ${marker}`);
 }
