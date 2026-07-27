@@ -157,8 +157,10 @@ for (const asset of ['./recommendation-governance.css', './recommendation-govern
 }
 if (loader.indexOf('./recommendation-governance.js') < loader.indexOf('./recommendation-champion.js')) throw new Error('Governança deve carregar após champion–challenger');
 if (!css.includes('.governanceSummary') || !css.includes('.govCard') || css.length < 1800) throw new Error('CSS de governança incompleto');
-if (version !== '0.6.6') throw new Error(`Versão incorreta: ${version}`);
-if (!sw.includes('commerce-radar-v26')) throw new Error('Cache PWA não foi atualizado');
+const versionParts = version.split('.').map(Number);
+if (versionParts[0] !== 0 || versionParts[1] < 6 || (versionParts[1] === 6 && versionParts[2] < 6)) throw new Error(`Versão anterior a 0.6.6: ${version}`);
+const cacheMatch = sw.match(/commerce-radar-v(\d+)/);
+if (!cacheMatch || Number(cacheMatch[1]) < 26) throw new Error('Cache PWA anterior à governança');
 for (const marker of ['Fluxo obrigatório', 'Aprovação em duas etapas', 'Duração mínima', 'Critérios de parada', 'Decisão formal', 'Backup e sincronização']) {
   if (!docs.includes(marker)) throw new Error(`Documentação incompleta: ${marker}`);
 }
