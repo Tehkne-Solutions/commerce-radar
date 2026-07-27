@@ -30,6 +30,7 @@
     './activation-playbooks.css',
     './activation-playbook-performance.css',
     './activation-playbook-versions.css',
+    './activation-playbook-version-experiments.css',
   ];
 
   const scripts = [
@@ -62,6 +63,7 @@
     './activation-playbooks.js',
     './activation-playbook-performance.js',
     './activation-playbook-versions.js',
+    './activation-playbook-version-experiments.js',
     './cloud-bootstrap.js',
   ];
 
