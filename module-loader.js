@@ -18,6 +18,7 @@
     './recommendation-segments.css',
     './recommendation-profile-control.css',
     './recommendation-drift.css',
+    './recommendation-champion.css',
   ];
 
   const scripts = [
@@ -38,6 +39,7 @@
     './recommendation-segments.js',
     './recommendation-profile-control.js',
     './recommendation-drift.js',
+    './recommendation-champion.js',
     './cloud-bootstrap.js',
   ];
 
