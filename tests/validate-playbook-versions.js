@@ -175,8 +175,10 @@ for (const asset of ['./activation-playbook-versions.css', './activation-playboo
 }
 if (loader.indexOf('./activation-playbook-versions.js') < loader.indexOf('./activation-playbook-performance.js')) throw new Error('Versionamento deve carregar após desempenho');
 if (!css.includes('.pbvSummary') || !css.includes('.pbvCandidate') || css.length < 2200) throw new Error('CSS de versões incompleto');
-if (version !== '0.7.6') throw new Error(`Versão incorreta: ${version}`);
-if (!sw.includes('commerce-radar-v36')) throw new Error('Cache PWA não foi atualizado');
+const parts = version.split('.').map(Number);
+if (parts[0] !== 0 || parts[1] < 7 || (parts[1] === 7 && parts[2] < 6)) throw new Error(`Versão anterior a 0.7.6: ${version}`);
+const cacheMatch = sw.match(/commerce-radar-v(\d+)/);
+if (!cacheMatch || Number(cacheMatch[1]) < 36) throw new Error('Cache PWA anterior ao versionamento');
 for (const marker of ['Versão-base retrocompatível', 'Imutabilidade', 'Variante candidata', 'Comparação de desempenho', 'Rollback', 'Backup e sincronização']) {
   if (!docs.includes(marker)) throw new Error(`Documentação incompleta: ${marker}`);
 }
