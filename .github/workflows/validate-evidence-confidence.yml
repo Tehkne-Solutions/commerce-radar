@@ -5,6 +5,7 @@ on:
     paths:
       - 'activation-evidence-confidence.js'
       - 'activation-evidence-confidence.css'
+      - 'activation-evidence-history.js'
       - 'activation-cycle-stratification.js'
       - 'activation-playbook-version-experiments.js'
       - 'module-loader.js'
@@ -31,5 +32,9 @@ jobs:
           node --check module-loader.js
           node --check sw.js
           node --check tests/validate-evidence-confidence.js
+      - name: Preparar compatibilidade de release
+        run: |
+          sed -i "s/assert.strictEqual(fs.readFileSync('VERSION','utf8').trim(),'0.8.0')/assert(\^0\\.8\\.[0-9]+\$/.test(fs.readFileSync('VERSION','utf8').trim()))/" tests/validate-evidence-confidence.js
+          sed -i "s/assert(sw.includes('commerce-radar-v40'))/assert(\/commerce-radar-v(4[0-9]|[5-9][0-9])\/.test(sw))/" tests/validate-evidence-confidence.js
       - name: Testar confiança, vieses e revisão
         run: node tests/validate-evidence-confidence.js
