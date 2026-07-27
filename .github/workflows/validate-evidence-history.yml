@@ -1,0 +1,34 @@
+name: Validar histórico da confiança
+
+on:
+  pull_request:
+    paths:
+      - 'activation-evidence-history.js'
+      - 'activation-evidence-history.css'
+      - 'activation-evidence-confidence.js'
+      - 'module-loader.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/EVIDENCE_HISTORY.md'
+      - 'tests/validate-evidence-history.js'
+      - '.github/workflows/validate-evidence-history.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-evidence-history:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+      - name: Validar sintaxe
+        run: |
+          node --check activation-evidence-history.js
+          node --check module-loader.js
+          node --check sw.js
+          node --check tests/validate-evidence-history.js
+      - name: Testar tendência e regressões
+        run: node tests/validate-evidence-history.js

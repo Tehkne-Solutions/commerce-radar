@@ -1,0 +1,1 @@
+.evidenceHistorySummary{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}.evidenceTrendCard{display:grid;gap:12px}.evidenceTrendCard strong{font-size:28px}.evidenceTrendUp{color:var(--success,#18864b)}.evidenceTrendDown{color:var(--danger,#b42318)}.evidenceTrendStable{color:var(--muted,#667085)}
