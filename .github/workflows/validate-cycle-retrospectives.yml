@@ -1,0 +1,39 @@
+name: Validar retrospectivas de ciclos
+
+on:
+  pull_request:
+    paths:
+      - 'activation-retrospective.js'
+      - 'activation-retrospective.css'
+      - 'activation-tracking.js'
+      - 'activation-plan.js'
+      - 'module-loader.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/CYCLE_RETROSPECTIVES.md'
+      - 'tests/validate-cycle-retrospectives.js'
+      - '.github/workflows/validate-cycle-retrospectives.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-cycle-retrospectives:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe
+        run: |
+          node --check activation-plan.js
+          node --check activation-tracking.js
+          node --check activation-retrospective.js
+          node --check module-loader.js
+          node --check sw.js
+          node --check tests/validate-cycle-retrospectives.js
+
+      - name: Testar retrospectivas e comparação
+        run: node tests/validate-cycle-retrospectives.js
