@@ -1,8 +1,8 @@
 # Commerce Radar — Tehkné Solutions
 
-Produto web para ajudar empreendedores a identificar sinais, decidir **o que vender, onde vender, como validar, quanto capital será necessário e se a operação realmente gera caixa**.
+Produto web para ajudar empreendedores a identificar sinais, decidir **o que vender, onde vender, como validar, quanto capital será necessário, se a operação realmente gera caixa e se as recomendações anteriores acertaram**.
 
-## MVP 0.5.4
+## MVP 0.6.1
 
 - Radar com 20 oportunidades iniciais.
 - Radar de tendências com fontes, validade, confiança e contradições.
@@ -12,6 +12,9 @@ Produto web para ajudar empreendedores a identificar sinais, decidir **o que ven
 - Rotina operacional diária e snapshots históricos.
 - Metas de SLA, comparação semanal e desvios recorrentes.
 - Fechamento semanal com decisões, ações e exportação.
+- Recomendações explicáveis com ranking temporal.
+- Calibração supervisionada com acertos, falsos positivos e falsos negativos.
+- Sugestão reversível de pesos baseada em resultados posteriores.
 - Histórico auditável de alterações por sinal.
 - Cadastro de oportunidades próprias.
 - Score, margem, preço mínimo e ranking de canais.
@@ -56,6 +59,7 @@ Registrar sinais e fontes
 → executar a rotina operacional
 → avaliar SLA e fechar a semana
 → priorizar tendências
+→ gerar recomendações explicáveis
 → criar oportunidade
 → analisar
 → comparar canais
@@ -66,6 +70,8 @@ Registrar sinais e fontes
 → controlar repasses
 → fechar o período
 → projetar metas e caixa
+→ comparar previsão com resultado posterior
+→ calibrar pesos com ação explícita
 ```
 
 ## Radar de tendências
@@ -162,6 +168,57 @@ Desvios recorrentes servem para investigação de processo e não devem ser usad
 
 Guia: [`docs/SLA_WEEKLY_CLOSE.md`](docs/SLA_WEEKLY_CLOSE.md).
 
+## Recomendações explicáveis
+
+A tela **Recomendações** reúne informações de:
+
+- tendências;
+- testes;
+- auditorias financeiras;
+- análises de viabilidade;
+- oportunidades próprias;
+- planejamento financeiro.
+
+O ranking utiliza os componentes:
+
+```text
+Mercado
+Validação
+Economia
+Prontidão
+Atualidade
+Evidência
+```
+
+Dados ausentes recebem zero no componente correspondente. Fontes vencidas, contradições, testes descartados e prejuízos reduzem a recomendação.
+
+Cada produto mostra score, confiança, justificativas, riscos, lacunas, próxima ação e variação em relação ao ranking anterior.
+
+Guia: [`docs/RECOMMENDATIONS.md`](docs/RECOMMENDATIONS.md).
+
+## Calibração do ranking
+
+A tela **Calibração do ranking** compara previsões completas com eventos comerciais registrados depois da previsão.
+
+Ela mede:
+
+- verdadeiros positivos;
+- falsos positivos;
+- verdadeiros negativos;
+- falsos negativos;
+- acurácia;
+- precisão;
+- recall;
+- Brier score.
+
+O horizonte padrão é de 21 dias. Resultados anteriores à previsão não entram na avaliação.
+
+A sugestão de pesos exige amostra mínima, sucessos e falhas. A alteração por componente é limitada e os pesos nunca são aplicados automaticamente.
+
+Cada calibração registra os pesos anteriores e aplicados. A última alteração pode ser revertida.
+
+Guia: [`docs/RECOMMENDATION_CALIBRATION.md`](docs/RECOMMENDATION_CALIBRATION.md).
+
 ## Importação de dados
 
 A tela **Importar dados** aceita arquivos de até 8 MB e processa até 20.000 linhas no navegador. Reconhece separadores comuns, BOM, valores monetários pt-BR e cabeçalhos em português ou inglês.
@@ -195,7 +252,7 @@ Guias:
 
 ## Backup e sincronização
 
-O backup da v0.5.4 contém:
+O backup da v0.6.1 contém:
 
 ```text
 analyses
@@ -222,6 +279,12 @@ trendComplianceSnapshots
 trendRoutineRuns
 trendSlaSettings
 trendWeeklyClosings
+recommendationSettings
+recommendationSnapshots
+recommendationDecisions
+calibrationSettings
+calibrationPredictions
+calibrationRuns
 ```
 
 Backups antigos continuam compatíveis. Os mesmos campos entram no workspace sincronizado, sem nova migration, pois o estado é armazenado como JSON versionado.
@@ -252,6 +315,7 @@ Guia: [`docs/AUTOMATED_ACTIVATION.md`](docs/AUTOMATED_ACTIVATION.md).
 - Escritas na nuvem passam por RPC versionado.
 - Cada usuário acessa somente os próprios registros por RLS.
 - Backups não incluem credenciais.
+- Pesos de recomendação só mudam após confirmação explícita.
 
 ## Limitações
 
@@ -264,10 +328,12 @@ Guia: [`docs/AUTOMATED_ACTIVATION.md`](docs/AUTOMATED_ACTIVATION.md).
 - Snapshots representam o momento da captura e não recriam o passado.
 - Semanas sem snapshots permanecem sem dados.
 - Desvios recorrentes não substituem gestão de pessoas ou análise de causa.
+- Correlação histórica não prova causalidade.
+- Amostras pequenas podem produzir calibrações instáveis.
+- A recomendação e a calibração dependem da qualidade dos dados informados.
 - Notificações locais não funcionam com o aplicativo totalmente fechado.
-- A qualidade dos resultados depende das fontes e dados informados.
 - Projeções não garantem venda, lucro ou liquidez.
-- A ferramenta não substitui contabilidade, apuração fiscal, conciliação bancária, análise de crédito, governança corporativa, gestão de pessoas ou aconselhamento financeiro.
+- A ferramenta não substitui contabilidade, apuração fiscal, conciliação bancária, análise de crédito, governança corporativa, gestão de pessoas, análise estatística independente ou aconselhamento financeiro.
 - Não há conexão OAuth direta com marketplaces nesta versão.
 
 ## Publicação
@@ -280,8 +346,8 @@ A `main` é publicada automaticamente pelo GitHub Pages.
 
 ## Roadmap
 
-- v0.6: recomendações com evidências e ranking temporal.
-- v0.6.1: explicabilidade das recomendações e trilha de decisão.
+- v0.6.2: segmentação da calibração por categoria, canal e maturidade da evidência.
+- v0.7: recomendações de portfólio, alocação de caixa e limite de exposição.
 - v1.0: inteligência de mercado e recomendações assistidas.
 
 ## Assinatura
