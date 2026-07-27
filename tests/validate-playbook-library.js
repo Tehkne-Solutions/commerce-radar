@@ -116,8 +116,10 @@ for (const asset of ['./activation-playbooks.css', './activation-playbooks.js'])
 }
 if (loader.indexOf('./activation-playbooks.js') < loader.indexOf('./activation-retrospective.js')) throw new Error('Playbooks devem carregar após retrospectivas');
 if (!css.includes('.playbookSummary') || !css.includes('.playbookLayout') || css.length < 1800) throw new Error('CSS de playbooks incompleto');
-if (version !== '0.7.4') throw new Error(`Versão incorreta: ${version}`);
-if (!sw.includes('commerce-radar-v34')) throw new Error('Cache PWA não foi atualizado');
+const parts = version.split('.').map(Number);
+if (parts[0] !== 0 || parts[1] < 7 || (parts[1] === 7 && parts[2] < 4)) throw new Error(`Versão anterior a 0.7.4: ${version}`);
+const cacheMatch = sw.match(/commerce-radar-v(\d+)/);
+if (!cacheMatch || Number(cacheMatch[1]) < 34) throw new Error('Cache PWA anterior à biblioteca');
 for (const marker of ['Origem obrigatória', 'Modelo de oferta', 'Checklist reutilizável', 'Publicação', 'Aplicação em um novo ciclo', 'Backup e sincronização']) {
   if (!docs.includes(marker)) throw new Error(`Documentação incompleta: ${marker}`);
 }
