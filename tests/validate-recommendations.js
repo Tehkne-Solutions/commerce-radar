@@ -81,7 +81,9 @@ if (!app.includes('./module-loader.js')) throw new Error('app.js não ativa o ca
 if (!loader.includes('./cloud-config.js') || !loader.includes('./trend-radar.js') || !loader.includes('./financial-audit.js') || !loader.includes('./cloud-bootstrap.js')) throw new Error('Sequência modular incompleta');
 if (loader.indexOf('./recommendations.js') < loader.indexOf('./trend-radar.js') || loader.indexOf('./recommendations.js') < loader.indexOf('./financial-audit.js')) throw new Error('Recomendações devem carregar após tendências e finanças');
 if (!css.includes('.recommendationSummary') || !css.includes('.recommendationCard') || css.length < 3000) throw new Error('Estilos de recomendações incompletos');
-if (version !== '0.6.0') throw new Error(`Versão incorreta: ${version}`);
-if (!sw.includes('commerce-radar-v20') || !sw.includes('./module-loader.js')) throw new Error('Cache PWA não foi atualizado');
+const parts = version.split('.').map(Number);
+if (parts[0] !== 0 || parts[1] < 6) throw new Error(`Versão anterior a 0.6.0: ${version}`);
+const cacheMatch = sw.match(/commerce-radar-v(\d+)/);
+if (!cacheMatch || Number(cacheMatch[1]) < 20 || !sw.includes('./module-loader.js')) throw new Error('Cache PWA anterior às recomendações');
 for (const marker of ['Fontes utilizadas', 'Pesos padrão', 'Atualidade', 'Penalizações', 'Ranking temporal', 'Carregamento modular', 'Backup e sincronização']) if (!docs.includes(marker)) throw new Error(`Documentação incompleta: ${marker}`);
 console.log('Ranking, confiança, temporalidade, explicações, carregador e PWA válidos.');

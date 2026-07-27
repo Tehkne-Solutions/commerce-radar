@@ -14,6 +14,7 @@
     './trend-radar.css',
     './trend-queue.css',
     './recommendations.css',
+    './recommendation-calibration.css',
   ];
 
   const scripts = [
@@ -30,6 +31,7 @@
     './trend-radar.js',
     './trend-queue.js',
     './recommendations.js',
+    './recommendation-calibration.js',
     './cloud-bootstrap.js',
   ];
 

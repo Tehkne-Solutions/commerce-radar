@@ -1,0 +1,36 @@
+name: Validar calibração do ranking
+
+on:
+  pull_request:
+    paths:
+      - 'recommendation-calibration.js'
+      - 'recommendation-calibration.css'
+      - 'recommendations.js'
+      - 'module-loader.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/RECOMMENDATION_CALIBRATION.md'
+      - 'tests/validate-recommendation-calibration.js'
+      - '.github/workflows/validate-recommendation-calibration.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-recommendation-calibration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe
+        run: |
+          node --check recommendation-calibration.js
+          node --check module-loader.js
+          node --check sw.js
+          node --check tests/validate-recommendation-calibration.js
+
+      - name: Executar cenários de calibração
+        run: node tests/validate-recommendation-calibration.js
