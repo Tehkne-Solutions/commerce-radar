@@ -1,0 +1,34 @@
+name: Validar aplicação controlada de perfis
+
+on:
+  pull_request:
+    paths:
+      - 'recommendation-profile-control.js'
+      - 'recommendation-profile-control.css'
+      - 'recommendation-segments.js'
+      - 'recommendations.js'
+      - 'module-loader.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/PROFILE_CONTROL.md'
+      - 'tests/validate-profile-control.js'
+      - '.github/workflows/validate-profile-control.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-profile-control:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+      - name: Validar sintaxe
+        run: |
+          node --check recommendation-profile-control.js
+          node --check module-loader.js
+          node --check sw.js
+      - name: Executar cenários de controle
+        run: node tests/validate-profile-control.js
