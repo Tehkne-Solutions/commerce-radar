@@ -1,0 +1,36 @@
+name: Validar governança dos experimentos
+
+on:
+  pull_request:
+    paths:
+      - 'recommendation-governance.js'
+      - 'recommendation-governance.css'
+      - 'recommendation-champion.js'
+      - 'module-loader.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/EXPERIMENT_GOVERNANCE.md'
+      - 'tests/validate-experiment-governance.js'
+      - '.github/workflows/validate-experiment-governance.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-experiment-governance:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe
+        run: |
+          node --check recommendation-governance.js
+          node --check module-loader.js
+          node --check sw.js
+          node --check tests/validate-experiment-governance.js
+
+      - name: Executar cenários de governança
+        run: node tests/validate-experiment-governance.js
