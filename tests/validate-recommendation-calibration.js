@@ -40,22 +40,22 @@ const components = {
   strong: { market: 90, validation: 88, economics: 84, readiness: 75, temporal: 90, evidence: 85 },
   weak: { market: 35, validation: 25, economics: 20, readiness: 45, temporal: 55, evidence: 40 },
 };
-const prediction = (key, product, score, classification, componentSet, date = '2026-06-01') => ({
-  key, product, score, confidence: 70, classification, components: componentSet, weights,
+const prediction = (product, score, classification, componentSet, date = '2026-06-01') => ({
+  key: global.CommerceRadarRecommendations.normalizeKey(product), product, score, confidence: 70, classification, components: componentSet, weights,
   latestEvidenceAt: date,
 });
 const snapshots = [
   { id: 'p1', date: '2026-06-01', weekStart: '2026-06-01', ranking: [
-    prediction('a', 'Produto A', 86, 'prioritize', components.strong),
-    prediction('b', 'Produto B', 75, 'test', components.strong),
-    prediction('c', 'Produto C', 72, 'test', components.weak),
-    prediction('d', 'Produto D', 68, 'test', components.weak),
-    prediction('e', 'Produto E', 30, 'pause', components.weak),
-    prediction('f', 'Produto F', 40, 'monitor', components.strong),
-    prediction('g', 'Produto G', 70, 'test', components.strong),
+    prediction('Produto A', 86, 'prioritize', components.strong),
+    prediction('Produto B', 75, 'test', components.strong),
+    prediction('Produto C', 72, 'test', components.weak),
+    prediction('Produto D', 68, 'test', components.weak),
+    prediction('Produto E', 30, 'pause', components.weak),
+    prediction('Produto F', 40, 'monitor', components.strong),
+    prediction('Produto G', 70, 'test', components.strong),
   ] },
   { id: 'p2', date: '2026-06-20', weekStart: '2026-06-15', ranking: [
-    prediction('h', 'Produto H', 78, 'test', components.strong, '2026-06-20'),
+    prediction('Produto H', 78, 'test', components.strong, '2026-06-20'),
   ] },
 ];
 const sourceInput = {
@@ -83,13 +83,13 @@ const config = {
 };
 const cases = api.buildCases(snapshots, sourceInput, config, '2026-07-01');
 const byKey = new Map(cases.map(row => [row.key, row]));
-if (byKey.get('a').outcome.status !== 'success') throw new Error('Teste validado deveria gerar sucesso');
-if (byKey.get('b').outcome.status !== 'success') throw new Error('Pedidos e lucro deveriam gerar sucesso');
-if (byKey.get('c').outcome.status !== 'failure') throw new Error('Teste descartado deveria gerar falha');
-if (byKey.get('d').outcome.status !== 'failure') throw new Error('Prejuízo deveria gerar falha');
-if (byKey.get('g').outcome.status !== 'inconclusive') throw new Error('Caso sem resultado deveria ser inconclusivo');
-if (byKey.get('h').outcome.status !== 'pending') throw new Error('Horizonte ainda aberto deveria ficar pendente');
-if (byKey.get('a').outcome.discarded) throw new Error('Evento anterior à previsão entrou no resultado');
+if (byKey.get('produto a').outcome.status !== 'success') throw new Error('Teste validado deveria gerar sucesso');
+if (byKey.get('produto b').outcome.status !== 'success') throw new Error('Pedidos e lucro deveriam gerar sucesso');
+if (byKey.get('produto c').outcome.status !== 'failure') throw new Error('Teste descartado deveria gerar falha');
+if (byKey.get('produto d').outcome.status !== 'failure') throw new Error('Prejuízo deveria gerar falha');
+if (byKey.get('produto g').outcome.status !== 'inconclusive') throw new Error('Caso sem resultado deveria ser inconclusivo');
+if (byKey.get('produto h').outcome.status !== 'pending') throw new Error('Horizonte ainda aberto deveria ficar pendente');
+if (byKey.get('produto a').outcome.discarded) throw new Error('Evento anterior à previsão entrou no resultado');
 
 const result = api.metrics(cases);
 if (result.total !== 6 || result.tp !== 2 || result.fp !== 2 || result.tn !== 1 || result.fn !== 1) {
