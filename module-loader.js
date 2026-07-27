@@ -27,6 +27,7 @@
     './activation-plan.css',
     './activation-tracking.css',
     './activation-retrospective.css',
+    './activation-playbooks.css',
   ];
 
   const scripts = [
@@ -56,6 +57,7 @@
     './activation-plan.js',
     './activation-tracking.js',
     './activation-retrospective.js',
+    './activation-playbooks.js',
     './cloud-bootstrap.js',
   ];
 
