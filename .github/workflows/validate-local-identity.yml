@@ -1,0 +1,37 @@
+name: Validar identidade local e acessos
+
+on:
+  pull_request:
+    paths:
+      - 'recommendation-identity.js'
+      - 'recommendation-identity.css'
+      - 'recommendation-audit.js'
+      - 'recommendation-governance.js'
+      - 'module-loader.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/LOCAL_IDENTITY_ACCESS.md'
+      - 'tests/validate-local-identity.js'
+      - '.github/workflows/validate-local-identity.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-local-identity:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe
+        run: |
+          node --check recommendation-identity.js
+          node --check module-loader.js
+          node --check sw.js
+          node --check tests/validate-local-identity.js
+
+      - name: Testar identidade, sessão, permissões e autoria
+        run: node tests/validate-local-identity.js
