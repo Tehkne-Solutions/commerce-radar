@@ -1,0 +1,37 @@
+name: Validar matriz e auditoria dos experimentos
+
+on:
+  pull_request:
+    paths:
+      - 'recommendation-audit.js'
+      - 'recommendation-audit.css'
+      - 'recommendation-governance.js'
+      - 'recommendation-champion.js'
+      - 'module-loader.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/EXPERIMENT_AUDIT.md'
+      - 'tests/validate-experiment-audit.js'
+      - '.github/workflows/validate-experiment-audit.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-experiment-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+
+      - name: Validar sintaxe
+        run: |
+          node --check recommendation-audit.js
+          node --check module-loader.js
+          node --check sw.js
+          node --check tests/validate-experiment-audit.js
+
+      - name: Testar segregação, exceções e auditoria
+        run: node tests/validate-experiment-audit.js
