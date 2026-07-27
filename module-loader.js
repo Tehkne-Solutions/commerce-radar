@@ -21,6 +21,7 @@
     './recommendation-champion.css',
     './recommendation-governance.css',
     './recommendation-audit.css',
+    './recommendation-identity.css',
   ];
 
   const scripts = [
@@ -44,6 +45,7 @@
     './recommendation-champion.js',
     './recommendation-governance.js',
     './recommendation-audit.js',
+    './recommendation-identity.js',
     './cloud-bootstrap.js',
   ];
 

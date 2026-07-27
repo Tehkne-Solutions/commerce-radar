@@ -127,8 +127,10 @@ for (const asset of ['./recommendation-audit.css', './recommendation-audit.js'])
 }
 if (loader.indexOf('./recommendation-audit.js') < loader.indexOf('./recommendation-governance.js')) throw new Error('Auditoria deve carregar após governança');
 if (!css.includes('.auditSummary') || !css.includes('.auditCard') || css.length < 1800) throw new Error('CSS de auditoria incompleto');
-if (version !== '0.6.7') throw new Error(`Versão incorreta: ${version}`);
-if (!sw.includes('commerce-radar-v27')) throw new Error('Cache PWA não foi atualizado');
+const versionParts = version.split('.').map(Number);
+if (versionParts[0] !== 0 || versionParts[1] < 6 || (versionParts[1] === 6 && versionParts[2] < 7)) throw new Error(`Versão anterior a 0.6.7: ${version}`);
+const cacheMatch = sw.match(/commerce-radar-v(\d+)/);
+if (!cacheMatch || Number(cacheMatch[1]) < 27) throw new Error('Cache PWA anterior à auditoria v0.6.7');
 for (const marker of ['Matriz de responsabilidades', 'Conflitos bloqueados', 'Execução controlada', 'Exceções formais', 'Relatório consolidado', 'Backup e sincronização']) {
   if (!docs.includes(marker)) throw new Error(`Documentação incompleta: ${marker}`);
 }
