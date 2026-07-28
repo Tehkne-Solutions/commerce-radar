@@ -1,0 +1,1 @@
+.portfolioSummary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:16px}.portfolioSummary .card strong{display:block;font-size:1.35rem;margin-top:4px}.portfolioCard{margin-bottom:12px}.portfolioCard h3{margin:0 0 8px}.portfolioCard p{margin:0 0 6px}@media(max-width:760px){.portfolioSummary{grid-template-columns:1fr}.portfolioCard{padding:14px}}
