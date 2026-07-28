@@ -43,5 +43,5 @@ assert(loader.includes('activation-evidence-prevention.js'));
 assert(loader.includes('activation-evidence-prevention.css'));
 assert(sw.includes('activation-evidence-prevention.js'));
 assert(sw.includes('activation-evidence-prevention.css'));
-assert.strictEqual(fs.readFileSync('VERSION', 'utf8').trim(), '0.8.4');
+assert.strictEqual(fs.readFileSync('VERSION', 'utf8').trim(), '0.8.5');
 console.log('validate-evidence-prevention: OK');
