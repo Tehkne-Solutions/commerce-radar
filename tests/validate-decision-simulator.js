@@ -38,6 +38,6 @@ assert(loader.includes('decision-simulator.js'));
 assert(loader.includes('decision-simulator.css'));
 assert(sw.includes('decision-simulator.js'));
 assert(sw.includes('decision-simulator.css'));
-assert(sw.includes('commerce-radar-v45'));
-assert.strictEqual(fs.readFileSync('VERSION', 'utf8').trim(), '0.8.5');
+assert(sw.includes('commerce-radar-v46'));
+assert.strictEqual(fs.readFileSync('VERSION', 'utf8').trim(), '0.8.6');
 console.log('validate-decision-simulator: OK');
