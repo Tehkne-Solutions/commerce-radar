@@ -13,7 +13,16 @@
 
   function candidates(){
     const source=ROOT.CommerceRadarPortfolioLab?.candidates?.()||[];
-    return source.filter(x=>Number.isFinite(x.returnRate)&&Number(x.investment||0)>0).map(x=>({...x,channel:x.channel||'Não informado',product:x.product||'Não informado',supplier:x.supplier||'Não informado'}));
+    const simulations=ROOT.CommerceRadarDecisionSimulator?.simulations?.()||[];
+    const simulationById=new Map(simulations.map(row=>[row.id,row]));
+    const recommendations=ROOT.CommerceRadarAdaptiveLearning?.recommendations?.()||[];
+    const recommendationById=new Map(recommendations.map(row=>[row.id,row]));
+    return source.map(x=>{
+      const simulation=simulationById.get(x.id)||{};
+      const recommendation=recommendationById.get(simulation.recommendationId)||{};
+      const investment=Number(x.investment??simulation.input?.investment??0);
+      return {...x,investment,channel:x.channel&&x.channel!=='Não informado'?x.channel:(simulation.channel||recommendation.channel||'Não informado'),product:x.product&&x.product!=='Não informado'?x.product:(simulation.product||recommendation.product||recommendation.playbookTitle||'Não informado'),supplier:x.supplier||simulation.supplier||recommendation.supplier||'Não informado'};
+    }).filter(x=>Number.isFinite(x.returnRate)&&Number.isFinite(x.investment)&&x.investment>0);
   }
 
   function distribute(rows,budget,cfg){
@@ -45,7 +54,7 @@
       }
       if(remaining>1e-7)throw new Error('Seleção inviável para os limites de concentração informados.');
       result.forEach(r=>r.amount=Math.round(budget*r.weight*100)/100);
-      let delta=Math.round((budget-result.reduce((s,r)=>s+r.amount,0))*100)/100;
+      const delta=Math.round((budget-result.reduce((s,r)=>s+r.amount,0))*100)/100;
       if(Math.abs(delta)>=.01){
         const target=[...result].sort((a,b)=>b.score-a.score).find(r=>{
           const next=(r.amount+delta)/budget;
