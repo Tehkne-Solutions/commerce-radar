@@ -41,6 +41,39 @@
     });
   }
 
+  function cappedWeights(rows, cap) {
+    if (rows.length * cap < 1 - 1e-9) throw new Error('O limite por recomendação é incompatível com a quantidade de opções.');
+    const weights = new Array(rows.length).fill(0);
+    let remaining = 1;
+    let active = rows.map((_, index) => index);
+    let guard = 0;
+    while (remaining > 1e-10 && active.length && guard < rows.length + 2) {
+      guard += 1;
+      const scoreTotal = active.reduce((sum, index) => sum + rows[index].score, 0);
+      const capped = [];
+      active.forEach(index => {
+        const share = scoreTotal > 0 ? remaining * rows[index].score / scoreTotal : remaining / active.length;
+        const room = cap - weights[index];
+        if (share >= room - 1e-12) {
+          weights[index] += room;
+          remaining -= room;
+          capped.push(index);
+        }
+      });
+      if (!capped.length) {
+        active.forEach(index => {
+          const share = scoreTotal > 0 ? remaining * rows[index].score / scoreTotal : remaining / active.length;
+          weights[index] += share;
+        });
+        remaining = 0;
+      } else {
+        active = active.filter(index => !capped.includes(index));
+      }
+    }
+    if (remaining > 1e-8) throw new Error('Não foi possível distribuir todo o orçamento respeitando os limites.');
+    return weights;
+  }
+
   function allocate(totalBudget, profileName = 'balanceado', ids = []) {
     const budget = Math.max(0, Number(totalBudget || 0));
     if (!budget) throw new Error('Orçamento virtual deve ser maior que zero.');
@@ -50,13 +83,11 @@
     if (!rows.length) throw new Error('Nenhuma simulação disponível para alocação.');
     const cfg = settings();
     const scored = rows.map(row => ({ ...row, score: Math.max(0.01, row.returnRate * 100 - row.risk * profile.riskPenalty - row.downsideRate * 10) }));
-    const scoreTotal = scored.reduce((sum, row) => sum + row.score, 0);
-    let allocations = scored.map(row => ({ ...row, weight: Math.min(profile.maxWeight, cfg.maxAssetWeight, row.score / scoreTotal) }));
-    let weightTotal = allocations.reduce((sum, row) => sum + row.weight, 0);
-    allocations = allocations.map(row => ({ ...row, weight: row.weight / weightTotal }));
-    allocations = allocations.map(row => ({ ...row, amount: Math.round(budget * row.weight * 100) / 100 }));
+    const cap = Math.min(profile.maxWeight, cfg.maxAssetWeight);
+    const weights = cappedWeights(scored, cap);
+    const allocations = scored.map((row, index) => ({ ...row, weight: weights[index], amount: Math.round(budget * weights[index] * 100) / 100 }));
     const allocated = allocations.reduce((sum, row) => sum + row.amount, 0);
-    if (allocations.length) allocations[0].amount = Math.round((allocations[0].amount + budget - allocated) * 100) / 100;
+    if (allocations.length) allocations[allocations.length - 1].amount = Math.round((allocations[allocations.length - 1].amount + budget - allocated) * 100) / 100;
     const expectedReturn = allocations.reduce((sum, row) => sum + row.amount * row.returnRate, 0);
     const weightedRisk = allocations.reduce((sum, row) => sum + row.weight * row.risk, 0);
     const worstCase = allocations.reduce((sum, row) => sum + row.amount * row.downsideRate, 0);
@@ -64,8 +95,8 @@
     const diversification = Math.max(0, Math.min(100, Math.round((1 - concentration) * 100)));
     const breaches = [];
     const groupWeight = field => allocations.reduce((map, row) => { map[row[field]] = (map[row[field]] || 0) + row.weight; return map; }, {});
-    Object.entries(groupWeight('channel')).forEach(([name, weight]) => { if (weight > cfg.maxChannelWeight) breaches.push(`Canal ${name} acima do limite.`); });
-    Object.entries(groupWeight('product')).forEach(([name, weight]) => { if (weight > cfg.maxProductWeight) breaches.push(`Produto ${name} acima do limite.`); });
+    Object.entries(groupWeight('channel')).forEach(([name, weight]) => { if (weight > cfg.maxChannelWeight + 1e-9) breaches.push(`Canal ${name} acima do limite.`); });
+    Object.entries(groupWeight('product')).forEach(([name, weight]) => { if (weight > cfg.maxProductWeight + 1e-9) breaches.push(`Produto ${name} acima do limite.`); });
     const row = { id: `portfolio-${uid()}`, profile: profileName, budget, allocations, expectedReturn: Math.round(expectedReturn * 100) / 100, weightedRisk: Math.round(weightedRisk * 10) / 10, worstCase: Math.round(worstCase * 100) / 100, concentration: Math.round(concentration * 1000) / 1000, diversification, breaches, createdAt: nowIso(), signature: 'Tehkné Solutions' };
     write(KEYS.portfolios, [row, ...portfolios()].slice(0, 2000));
     return row;
@@ -116,7 +147,7 @@
   }
 
   function boot() { let attempts = 0; const timer = setInterval(() => { attempts += 1; if (inject() || attempts > 2000) clearInterval(timer); }, 50); }
-  ROOT.CommerceRadarPortfolioLab = { KEYS, DEFAULTS, PROFILES, settings, portfolios, candidates, allocate, compare, recordDecision, captureSnapshot, exportMarkdown, money };
+  ROOT.CommerceRadarPortfolioLab = { KEYS, DEFAULTS, PROFILES, settings, portfolios, candidates, cappedWeights, allocate, compare, recordDecision, captureSnapshot, exportMarkdown, money };
   extendCloud();
   if (typeof document !== 'undefined') document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', boot, { once: true }) : boot();
 })();
