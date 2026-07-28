@@ -1,0 +1,30 @@
+name: Validate evidence prevention
+
+on:
+  push:
+    paths:
+      - 'activation-evidence-prevention.js'
+      - 'activation-evidence-prevention.css'
+      - 'module-loader.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'tests/validate-evidence-prevention.js'
+      - '.github/workflows/validate-evidence-prevention.yml'
+  pull_request:
+    paths:
+      - 'activation-evidence-prevention.js'
+      - 'activation-evidence-prevention.css'
+      - 'module-loader.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'tests/validate-evidence-prevention.js'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: node tests/validate-evidence-prevention.js
