@@ -1,0 +1,24 @@
+name: Validate budget optimizer
+
+on:
+  pull_request:
+    paths:
+      - 'budget-optimizer.js'
+      - 'budget-optimizer.css'
+      - 'tests/validate-budget-optimizer.js'
+      - 'module-loader.js'
+      - 'sw.js'
+      - 'VERSION'
+      - '.github/workflows/validate-budget-optimizer.yml'
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node tests/validate-budget-optimizer.js
