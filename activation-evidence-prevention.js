@@ -25,7 +25,7 @@
   const scoreFor = experimentId => ROOT.CommerceRadarEvidenceConfidence?.assess?.(experimentId, false)?.score ?? 0;
 
   function startMonitoring(experimentId, source = {}) {
-    const active = monitors().find(row => row.experimentId === experimentId && row.status === 'monitoring');
+    const active = monitors().find(row => row.experimentId === experimentId && ['monitoring', 'attention'].includes(row.status));
     if (active) return active;
     const startedAt = nowIso();
     const endsAt = new Date(Date.now() + settings().observationDays * 86400000).toISOString();
@@ -38,7 +38,7 @@
   }
 
   function checkpoint(experimentId, input = {}) {
-    const monitor = monitors().find(row => row.experimentId === experimentId && row.status === 'monitoring');
+    const monitor = monitors().find(row => row.experimentId === experimentId && ['monitoring', 'attention'].includes(row.status));
     if (!monitor) throw new Error('Não há monitoramento ativo para este experimento.');
     const row = { id: `prevention-checkpoint-${uid()}`, monitorId: monitor.id, experimentId, score: Number(input.score ?? scoreFor(experimentId)), componentScores: input.componentScores || {}, reason: String(input.reason || 'manual').slice(0, 120), capturedAt: nowIso(), signature: 'Tehkné Solutions' };
     write(KEYS.checkpoints, [row, ...checkpoints()].slice(0, 12000));
