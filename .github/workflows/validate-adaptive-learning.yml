@@ -1,0 +1,29 @@
+name: Validate adaptive learning
+
+on:
+  pull_request:
+    paths:
+      - 'adaptive-learning.js'
+      - 'adaptive-learning.css'
+      - 'docs/ADAPTIVE_LEARNING.md'
+      - 'tests/validate-adaptive-learning.js'
+      - 'module-loader.js'
+      - 'sw.js'
+      - 'VERSION'
+      - '.github/workflows/validate-adaptive-learning.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'adaptive-learning.js'
+      - 'adaptive-learning.css'
+      - 'tests/validate-adaptive-learning.js'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: node tests/validate-adaptive-learning.js
