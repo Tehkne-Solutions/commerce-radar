@@ -1,0 +1,37 @@
+name: Validar recuperação da confiança
+
+on:
+  pull_request:
+    paths:
+      - 'activation-evidence-recovery.js'
+      - 'activation-evidence-recovery.css'
+      - 'activation-evidence-history.js'
+      - 'activation-evidence-confidence.js'
+      - 'module-loader.js'
+      - 'sw.js'
+      - 'VERSION'
+      - 'docs/EVIDENCE_RECOVERY.md'
+      - 'tests/validate-evidence-recovery.js'
+      - '.github/workflows/validate-evidence-recovery.yml'
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate-evidence-recovery:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v6
+      - name: Validar módulo de recuperação
+        run: node --check activation-evidence-recovery.js
+      - name: Validar loader
+        run: node --check module-loader.js
+      - name: Validar service worker
+        run: node --check sw.js
+      - name: Validar teste
+        run: node --check tests/validate-evidence-recovery.js
+      - name: Testar alertas, ações e recuperação
+        run: node tests/validate-evidence-recovery.js
