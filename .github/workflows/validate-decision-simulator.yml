@@ -1,0 +1,22 @@
+name: Validate decision simulator
+on:
+  pull_request:
+    paths:
+      - 'decision-simulator.js'
+      - 'decision-simulator.css'
+      - 'tests/validate-decision-simulator.js'
+      - 'module-loader.js'
+      - 'sw.js'
+      - 'VERSION'
+      - '.github/workflows/validate-decision-simulator.yml'
+  push:
+    branches: [main]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node tests/validate-decision-simulator.js
