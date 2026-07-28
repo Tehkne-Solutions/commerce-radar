@@ -1,0 +1,20 @@
+name: Validate assisted execution plan
+on:
+  pull_request:
+    paths:
+      - 'assisted-execution-plan.js'
+      - 'assisted-execution-plan.css'
+      - 'tests/validate-assisted-execution-plan.js'
+      - 'module-loader.js'
+      - 'sw.js'
+      - 'VERSION'
+      - '.github/workflows/validate-assisted-execution-plan.yml'
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node tests/validate-assisted-execution-plan.js
