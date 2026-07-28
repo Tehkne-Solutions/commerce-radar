@@ -1,18 +1,9 @@
 (() => {
   'use strict';
   const ROOT = typeof window !== 'undefined' ? window : globalThis;
-  const KEYS = {
-    runs: 'tehkne-commerce-radar-v87-budget-optimizer-runs',
-    decisions: 'tehkne-commerce-radar-v87-budget-optimizer-decisions',
-    reports: 'tehkne-commerce-radar-v87-budget-optimizer-reports',
-    snapshots: 'tehkne-commerce-radar-v87-budget-optimizer-snapshots'
-  };
-  const DEFAULTS = { maxAssetWeight: .45, maxChannelWeight: .65, maxProductWeight: .65, maxSupplierWeight: .65, minInvestment: 100 };
-  const STRATEGIES = {
-    conservadora: { riskPenalty: 1.4, diversificationBonus: .25 },
-    equilibrada: { riskPenalty: .85, diversificationBonus: .15 },
-    otimizada: { riskPenalty: .45, diversificationBonus: .05 }
-  };
+  const KEYS = { runs:'tehkne-commerce-radar-v87-budget-optimizer-runs', decisions:'tehkne-commerce-radar-v87-budget-optimizer-decisions', reports:'tehkne-commerce-radar-v87-budget-optimizer-reports', snapshots:'tehkne-commerce-radar-v87-budget-optimizer-snapshots' };
+  const DEFAULTS = { maxAssetWeight:.45, maxChannelWeight:.65, maxProductWeight:.65, maxSupplierWeight:.65, minInvestment:100 };
+  const STRATEGIES = { conservadora:{riskPenalty:1.4,diversificationBonus:.25}, equilibrada:{riskPenalty:.85,diversificationBonus:.15}, otimizada:{riskPenalty:.45,diversificationBonus:.05} };
   const read=(k,f=[])=>{try{return JSON.parse(localStorage.getItem(k)||JSON.stringify(f))??f}catch{return f}};
   const write=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
   const uid=()=>globalThis.crypto?.randomUUID?.()||`${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -22,43 +13,80 @@
 
   function candidates(){
     const source=ROOT.CommerceRadarPortfolioLab?.candidates?.()||[];
-    return source.filter(x=>Number.isFinite(x.returnRate)&&Number(x.investment||1)>0).map(x=>({...x,supplier:x.supplier||'Não informado'}));
+    return source.filter(x=>Number.isFinite(x.returnRate)&&Number(x.investment||0)>0).map(x=>({...x,channel:x.channel||'Não informado',product:x.product||'Não informado',supplier:x.supplier||'Não informado'}));
   }
 
-  function distribute(rows,budget,maxWeight,minInvestment){
-    if(rows.length*maxWeight<1-1e-9) throw new Error('Seleção inviável para o limite máximo por oportunidade.');
-    const result=rows.map(r=>({...r,weight:0,amount:0}));
-    let remaining=1;
-    let active=result.map((_,i)=>i);
-    let guard=0;
-    while(remaining>1e-9&&active.length&&guard++<100){
-      const total=active.reduce((s,i)=>s+Math.max(.000001,result[i].score),0);
-      let used=0; const next=[];
-      active.forEach(i=>{const room=maxWeight-result[i].weight;const share=remaining*Math.max(.000001,result[i].score)/total;const add=Math.min(room,share);result[i].weight+=add;used+=add;if(room-add>1e-9)next.push(i)});
-      if(used<1e-12)break; remaining-=used; active=next;
+  function distribute(rows,budget,cfg){
+    const fields=[['channel',cfg.maxChannelWeight],['product',cfg.maxProductWeight],['supplier',cfg.maxSupplierWeight]];
+    const allocate=current=>{
+      if(!current.length)throw new Error('Nenhuma oportunidade atende ao investimento mínimo.');
+      if(current.length*cfg.maxAssetWeight<1-1e-9)throw new Error('Seleção inviável para o limite máximo por oportunidade.');
+      const result=current.map(r=>({...r,weight:0,amount:0}));
+      const grouped={channel:{},product:{},supplier:{}};
+      let remaining=1,guard=0;
+      while(remaining>1e-9&&guard++<1000){
+        const active=result.filter(r=>{
+          if(cfg.maxAssetWeight-r.weight<=1e-9)return false;
+          return fields.every(([field,limit])=>limit-(grouped[field][r[field]]||0)>1e-9);
+        });
+        if(!active.length)break;
+        const total=active.reduce((s,r)=>s+Math.max(.000001,r.score),0);
+        let used=0;
+        active.forEach(r=>{
+          const assetRoom=cfg.maxAssetWeight-r.weight;
+          const groupRoom=Math.min(...fields.map(([field,limit])=>limit-(grouped[field][r[field]]||0)));
+          const share=remaining*Math.max(.000001,r.score)/total;
+          const add=Math.max(0,Math.min(assetRoom,groupRoom,share));
+          r.weight+=add; used+=add;
+          fields.forEach(([field])=>{grouped[field][r[field]]=(grouped[field][r[field]]||0)+add});
+        });
+        if(used<1e-12)break;
+        remaining-=used;
+      }
+      if(remaining>1e-7)throw new Error('Seleção inviável para os limites de concentração informados.');
+      result.forEach(r=>r.amount=Math.round(budget*r.weight*100)/100);
+      let delta=Math.round((budget-result.reduce((s,r)=>s+r.amount,0))*100)/100;
+      if(Math.abs(delta)>=.01){
+        const target=[...result].sort((a,b)=>b.score-a.score).find(r=>{
+          const next=(r.amount+delta)/budget;
+          if(next<0||next>cfg.maxAssetWeight+1e-9)return false;
+          return fields.every(([field,limit])=>result.filter(x=>x[field]===r[field]).reduce((s,x)=>s+x.amount/budget,0)+delta/budget<=limit+1e-9);
+        });
+        if(!target)throw new Error('Não foi possível reconciliar o orçamento sem violar limites.');
+        target.amount=Math.round((target.amount+delta)*100)/100;
+      }
+      result.forEach(r=>r.weight=r.amount/budget);
+      return result;
+    };
+
+    let current=[...rows];
+    while(true){
+      const result=allocate(current);
+      const below=result.filter(r=>r.amount+1e-9<cfg.minInvestment);
+      if(!below.length)return result;
+      const removeIds=new Set(below.map(r=>r.id));
+      current=current.filter(r=>!removeIds.has(r.id));
     }
-    result.forEach(r=>r.amount=Math.round(budget*r.weight*100)/100);
-    const delta=Math.round((budget-result.reduce((s,r)=>s+r.amount,0))*100)/100;
-    if(result.length) result[0].amount=Math.round((result[0].amount+delta)*100)/100;
-    return result.filter(r=>r.amount>=minInvestment||r.amount===Math.max(...result.map(x=>x.amount)));
   }
 
   function optimize(totalBudget,strategyName='otimizada',constraints={}){
     const budget=Math.max(0,Number(totalBudget||0)); if(!budget)throw new Error('Orçamento virtual deve ser maior que zero.');
     const strategy=STRATEGIES[strategyName]; if(!strategy)throw new Error('Estratégia inválida.');
     const cfg={...DEFAULTS,...constraints};
+    if(cfg.minInvestment>budget)throw new Error('Investimento mínimo não pode superar o orçamento virtual.');
     const rows=candidates(); if(!rows.length)throw new Error('Nenhuma oportunidade válida disponível.');
     const scored=rows.map(r=>({...r,score:Math.max(.0001,(r.returnRate*100)-(r.risk*strategy.riskPenalty)-(r.downsideRate*15)+strategy.diversificationBonus)}));
-    const allocations=distribute(scored,budget,cfg.maxAssetWeight,cfg.minInvestment);
+    const allocations=distribute(scored,budget,cfg);
     const sumBy=field=>allocations.reduce((m,r)=>(m[r[field]]=(m[r[field]]||0)+r.weight,m),{});
     const breaches=[];
-    [['channel',cfg.maxChannelWeight,'Canal'],['product',cfg.maxProductWeight,'Produto'],['supplier',cfg.maxSupplierWeight,'Fornecedor']].forEach(([f,l,label])=>Object.entries(sumBy(f)).forEach(([n,w])=>{if(w>l+1e-9)breaches.push(`${label} ${n} acima do limite.`)}));
+    [['channel',cfg.maxChannelWeight,'Canal'],['product',cfg.maxProductWeight,'Produto'],['supplier',cfg.maxSupplierWeight,'Fornecedor']].forEach(([f,l,label])=>Object.entries(sumBy(f)).forEach(([n,w])=>{if(w>l+1e-8)breaches.push(`${label} ${n} acima do limite.`)}));
+    if(breaches.length)throw new Error(`Alocação inválida: ${breaches.join(' ')}`);
     const expectedReturn=allocations.reduce((s,r)=>s+r.amount*r.returnRate,0);
     const weightedRisk=allocations.reduce((s,r)=>s+r.weight*r.risk,0);
     const worstCase=allocations.reduce((s,r)=>s+r.amount*r.downsideRate,0);
     const concentration=allocations.reduce((s,r)=>s+r.weight*r.weight,0);
     const diversification=Math.round(Math.max(0,Math.min(100,(1-concentration)*100)));
-    const roi=budget?expectedReturn/budget:0;
+    const roi=expectedReturn/budget;
     const efficiency=Math.round(Math.max(0,(roi*100)-weightedRisk*.35+diversification*.2)*10)/10;
     const explanations=allocations.map(r=>`${r.title}: ${Math.round(r.weight*1000)/10}% por retorno esperado de ${Math.round(r.returnRate*1000)/10}% e risco ${r.risk}/100.`);
     const row={id:`budget-optimization-${uid()}`,strategy:strategyName,budget,constraints:cfg,allocations,expectedReturn:Math.round(expectedReturn*100)/100,roi:Math.round(roi*10000)/100,weightedRisk:Math.round(weightedRisk*10)/10,worstCase:Math.round(worstCase*100)/100,diversification,concentration:Math.round(concentration*1000)/1000,efficiency,breaches,explanations,createdAt:nowIso(),signature:'Tehkné Solutions'};
